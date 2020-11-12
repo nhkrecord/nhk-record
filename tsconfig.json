@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "lib": ["es2017"],
+    "removeComments": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "sourceMap": true,
+    "target": "es2017",
+    "outDir": "lib"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules/**/*"
+  ]
+}
