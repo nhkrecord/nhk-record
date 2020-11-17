@@ -39,16 +39,17 @@ const main = async () => {
   while (true) {
     try {
       const programme = await getCurrentProgramme();
-      const { title, endDate } = programme;
 
-      if (programme) {
-        logger.info(`Currently airing programme is: ${title}`);
-        recordIfDesired(programme);
-      } else {
+      if (!programme) {
         logger.debug('Nothing currently airing?');
         await sleep(3 * 1000);
         continue;
       }
+      
+      const { title, endDate } = programme;
+      
+      logger.info(`Currently airing programme is: ${title}`);
+      recordIfDesired(programme);
 
       const sleepMillis = endDate.getTime() - Date.now() - config.safetyBuffer;
       logger.info(`Sleeping ${sleepMillis / 1000} seconds until next programme`);
