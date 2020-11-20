@@ -1,4 +1,5 @@
 import { mkdir, rename, stat, writeFile } from 'fs/promises';
+import hasha from 'hasha';
 import { join } from 'path';
 import sanitizeFilename from 'sanitize-filename';
 import config from './config';
@@ -84,13 +85,16 @@ export const writeMetadata = async (
   successful: boolean,
   recording: { start: Date; end: Date }
 ): Promise<string> => {
-  const metadataPath = `${successful ? getSavePath(programme) : getFailedPath(programme)}.metadata`;
+  const path = `${successful ? getSavePath(programme) : getFailedPath(programme)}`;
+  const metadataPath = `${path}.metadata`;
 
+  const sha256 = await hasha.fromFile(path, { algorithm: 'sha256' });
   const metadata = JSON.stringify(
     {
       ...programme,
       recordDateStart: recording?.start?.toISOString(),
-      recordDateEnd: recording?.end?.toISOString()
+      recordDateEnd: recording?.end?.toISOString(),
+      sha256
     },
     null,
     2
