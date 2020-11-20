@@ -88,7 +88,12 @@ export const writeMetadata = async (
   const path = `${successful ? getSavePath(programme) : getFailedPath(programme)}`;
   const metadataPath = `${path}.metadata`;
 
+  logger.debug(`Hashing ${path}`);
+  const hashStartTime = process.hrtime.bigint();
   const sha256 = await hasha.fromFile(path, { algorithm: 'sha256' });
+  const hashDuration = process.hrtime.bigint() - hashStartTime;
+  logger.info(`'${path}' sha256 hash is: ${sha256}, calculated in ${hashDuration} nanos`);
+
   const metadata = JSON.stringify(
     {
       ...programme,
