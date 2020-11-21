@@ -32,6 +32,11 @@ const config = yargs(process.argv.slice(2))
     describe: 'Directory in which to save recorded programmes',
     type: 'string'
   })
+  .option('f', {
+    alias: 'log-file',
+    describe: 'Location of log file',
+    type: 'string'
+  })
   .option('i', {
     alias: 'stream-url',
     describe: 'URL from which to record stream',
