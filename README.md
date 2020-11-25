@@ -62,7 +62,7 @@ Match patterns use [micromatch](https://github.com/micromatch/micromatch). For e
 
 ## Running as a docker container
 
-Docker images are available on [Docker Hub](https://hub.docker.com/repository/docker/nhkrecord/nhk-record/)
+Docker images are available on [Docker Hub](https://hub.docker.com/r/nhkrecord/nhk-record)
 
 Example docker-compose.yml:
 
