@@ -1,6 +1,6 @@
 {
   "name": "nhk-record",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "start": "npm run build && node lib/index.js"

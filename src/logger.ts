@@ -23,7 +23,11 @@ if (config.logFile && config.logLevelFile !== 'none') {
   logger.add(
     new transports.File({
       level: config.logLevelFile,
-      filename: config.logFile
+      filename: config.logFile,
+      maxsize: 1024 * 1024 * 5,
+      maxFiles: 10,
+      tailable: true,
+      zippedArchive: true
     })
   );
 }
