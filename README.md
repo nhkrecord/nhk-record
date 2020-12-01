@@ -70,7 +70,6 @@ Example docker-compose.yml:
 version: "3.7"
 services:
   nhk-record:
-    container_name: nhk-record
     image: nhkrecord/nhk-record:latest
     restart: unless-stopped
     volumes:
