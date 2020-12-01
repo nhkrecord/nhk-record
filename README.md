@@ -1,5 +1,9 @@
 # nhk-record
 
+## Dependencies
+- [Node.js](https://github.com/nodejs/node)
+- [FFmpeg](https://github.com/FFmpeg/FFmpeg)
+
 ## Installing
 ```
 git clone git@github.com:nhkrecord/nhk-record.git
