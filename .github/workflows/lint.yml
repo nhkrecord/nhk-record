@@ -29,4 +29,4 @@ jobs:
           HUSKY_SKIP_INSTALL: 1
 
       - name: Run ESLint
-        run: eslint src
+        run: npx eslint src
