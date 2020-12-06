@@ -36,7 +36,7 @@ const recordIfDesired = async (programme: Programme) => {
 const main = async () => {
   await makeSaveDirectory();
 
-  while (true) {
+  for (;;) {
     try {
       const programme = await getCurrentProgramme();
 
@@ -45,9 +45,9 @@ const main = async () => {
         await sleep(3 * 1000);
         continue;
       }
-      
+
       const { title, endDate } = programme;
-      
+
       logger.info(`Currently airing programme is: ${title}`);
       recordIfDesired(programme);
 

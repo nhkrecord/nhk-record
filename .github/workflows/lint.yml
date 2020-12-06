@@ -1,0 +1,32 @@
+name: Lint
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node 15.x
+          uses: actions/setup-node@v1
+          with:
+            node-version: 15.x
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
+
+      - name: Install modules
+        run: npm install
+        env:
+          HUSKY_SKIP_INSTALL: 1
+
+      - name: Run ESLint
+        run: eslint src
