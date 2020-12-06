@@ -1,14 +1,33 @@
 import pick from 'lodash.pick';
-import memoize from 'memoizee';
 import fetch from 'node-fetch';
 import config from './config';
+import logger from './logger';
 import { parseDate } from './utils';
 
-const getApiKey = async (): Promise<string | undefined> => {
-  const res = await fetch('https://www3.nhk.or.jp/nhkworld/common/js/common.js');
-  const text = await res.text();
-  const match = text.match(/window\.nw_api_key=window\.nw_api_key\|\|"(?<apiKey>[^"]+)"/);
-  return match?.groups?.apiKey || 'EJfK8jdS57GqlupFgAfAAwr573q01y6k';
+const SCHEDULE_BEGIN_OFFSET = -2 * 60 * 60 * 1000;
+const SCHEDULE_END_OFFSET = 7 * 24 * 60 * 60 * 1000;
+const MAX_CACHE_AGE = 60 * 60 * 1000;
+
+let scheduleData: Array<Programme> = null;
+let scheduleDataTimestamp: number = 0;
+
+const getApiKey = async (): Promise<string> => {
+  try {
+    const res = await fetch('https://www3.nhk.or.jp/nhkworld/common/js/common.js');
+    const text = await res.text();
+    const match = text.match(/window\.nw_api_key=window\.nw_api_key\|\|"(?<apiKey>[^"]+)"/);
+    const apiKey = match?.groups?.apiKey;
+    if (apiKey) {
+      logger.debug(`Retrieved API key: ${apiKey}`);
+      return apiKey;
+    }
+  } catch (err) {
+    logger.error('Failed to retrieve API');
+    logger.error(err);
+  }
+
+  logger.debug('Falling back to hardcoded API key');
+  return 'EJfK8jdS57GqlupFgAfAAwr573q01y6k';
 };
 
 const getScheduleForPeriod = async (apiKey: string, start: Date, end: Date): Promise<Schedule> => {
@@ -29,8 +48,8 @@ export const getSchedule = async (): Promise<Array<Programme>> => {
     throw new Error('Unable to retrieve API key');
   }
 
-  const start = new Date(Date.now() - 2 * 60 * 60 * 1000);
-  const end = new Date(Date.now() + 6 * 60 * 60 * 1000);
+  const start = new Date(Date.now() + SCHEDULE_BEGIN_OFFSET);
+  const end = new Date(Date.now() + SCHEDULE_END_OFFSET);
 
   const rawSchedule = await getScheduleForPeriod(apiKey, start, end);
   const items = rawSchedule?.channel?.item;
@@ -47,11 +66,31 @@ export const getSchedule = async (): Promise<Array<Programme>> => {
   }
 };
 
-export const getScheduleMemoized = memoize(getSchedule, {
-  // Cache schedule for 60 minutes
-  maxAge: 60 * 60 * 1000,
-  promise: true
-});
+export const getScheduleMemoized = async (): Promise<Array<Programme>> => {
+  const cacheAge = Date.now() - scheduleDataTimestamp;
+  if (cacheAge < MAX_CACHE_AGE) {
+    logger.debug(`Using cached schedule (${cacheAge / 1000} seconds old)`);
+    return scheduleData;
+  }
+
+  try {
+    logger.debug('Retrieving schedule');
+    scheduleData = await getSchedule();
+    scheduleDataTimestamp = Date.now();
+
+    return scheduleData;
+  } catch (err) {
+    logger.error('Failed to get schedule data');
+    logger.error(err);
+
+    if (scheduleData) {
+      logger.info(`Falling back to old cached version (${cacheAge / 1000} seconds old)`);
+      return scheduleData;
+    }
+
+    throw err;
+  }
+};
 
 export const getCurrentProgramme = async (): Promise<Programme> => {
   const programmes = await getScheduleMemoized();
