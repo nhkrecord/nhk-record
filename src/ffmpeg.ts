@@ -74,7 +74,7 @@ const execFfmpeg = (path: string, targetSeconds: number, thumbnailData: Buffer |
       await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
     ).map((b) => b.toString('utf-8'));
 
-    proc.on('exit', async (code) => {
+    proc.on('exit', (code) => {
       if (code !== 0) {
         return reject(new ExecError('Non-zero exit code', stdoutContent, stderrContent));
       }
