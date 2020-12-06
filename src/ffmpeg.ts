@@ -109,7 +109,10 @@ export const record = async (programme: Programme): Promise<void> => {
         start: recordingStart,
         end: recordingEnd
       });
-      await writeThumbnail(programme, thumbnailData);
+
+      if (thumbnailData) {
+        await writeThumbnail(programme, thumbnailData);
+      }
     } else {
       throw new Error('Recording duration is too short, considering failed');
     }

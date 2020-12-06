@@ -21,6 +21,8 @@
     "yargs": "^16.1.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^11.0.0",
+    "@commitlint/config-conventional": "^11.0.0",
     "@types/app-root-path": "^1.2.4",
     "@types/lodash.pick": "^4.4.6",
     "@types/micromatch": "^4.0.1",
@@ -28,8 +30,25 @@
     "@types/node-fetch": "^2.5.7",
     "@types/stream-to-promise": "^2.2.1",
     "@types/yargs": "^15.0.9",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^7.13.0",
+    "husky": "^4.3.4",
     "prettier": "^2.1.2",
     "typescript": "^4.0.5"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
   }
 }
