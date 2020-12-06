@@ -56,7 +56,7 @@ export const getSchedule = async (): Promise<Array<Programme>> => {
 
   if (items) {
     return items.map((item) => ({
-      ...pick(item, ['title', 'subtitle', 'seriesId', 'airingId', 'description']),
+      ...pick(item, ['title', 'subtitle', 'seriesId', 'airingId', 'description', 'thumbnail']),
       content: item.content_clean,
       startDate: parseDate(item.pubDate),
       endDate: parseDate(item.endDate)

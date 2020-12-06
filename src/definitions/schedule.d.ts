@@ -7,6 +7,7 @@ type ScheduleItem = {
   airingId: string;
   pubDate: string;
   endDate: string;
+  thumbnail: string;
 };
 
 type Schedule = {

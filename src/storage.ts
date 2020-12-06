@@ -28,7 +28,7 @@ export const getFilename = (programme: Programme): string => {
     parts.push(programme.subtitle);
   }
 
-  return sanitizeFilename(`${parts.join(' - ')}.ts`).replace(/'/g, '');
+  return sanitizeFilename(`${parts.join(' - ')}.mp4`).replace(/'/g, '');
 };
 
 export const getSavePath = (programme: Programme): string =>
@@ -78,6 +78,18 @@ export const renameFailed = async (programme: Programme): Promise<string> => {
   }
 
   return to;
+};
+
+export const writeThumbnail = async (
+  programme: Programme,
+  thumbnailData: Buffer
+): Promise<string> => {
+  const path = getSavePath(programme);
+  const thumbnailPath = `${path}.jpg`;
+
+  await writeFile(thumbnailPath, thumbnailData);
+
+  return thumbnailPath;
 };
 
 export const writeMetadata = async (

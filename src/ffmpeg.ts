@@ -1,30 +1,53 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
+import streamToPromise from 'stream-to-promise';
 import { promisify } from 'util';
 import config from './config';
 import logger from './logger';
-import { getInProgressPath, renameFailed, renameSuccessful, writeMetadata } from './storage';
+import {
+  getInProgressPath,
+  renameFailed,
+  renameSuccessful,
+  writeThumbnail,
+  writeMetadata
+} from './storage';
+import { getThumbnail } from './thumbnail';
+import { ExecError } from './error';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
-const getFfmpegCommand = (path: string, durationSeconds: number): string =>
+const getFfmpegArguments = (
+  path: string,
+  thumbnail: boolean,
+  durationSeconds: number
+): Array<string> =>
   [
-    'ffmpeg',
-    `-i '${config.streamUrl}'`,
-    `-t ${durationSeconds}`,
-    '-codec copy',
-    '-f mpegts',
-    `'${path}'`
-  ].join(' ');
+    '-i',
+    config.streamUrl,
+    thumbnail ? ['-i', '-', '-map', '0', '-map', '1', '-disposition:v:1', 'attached_pic'] : [],
+    '-t',
+    `${durationSeconds}`,
+    '-codec',
+    'copy',
+    '-f',
+    'mp4',
+    path
+  ].flat();
 
-const getFfprobeCommand = (path: string): string =>
-  ['ffprobe', '-v quiet', '-print_format json', '-show_format', `'${path}'`].join(' ');
+const getFfprobeArguments = (path: string): Array<string> => [
+  '-v',
+  'quiet',
+  '-print_format',
+  'json',
+  '-show_format',
+  path
+];
 
 const getFileDuration = async (path: string): Promise<number> => {
-  const command = getFfprobeCommand(path);
+  const args = getFfprobeArguments(path);
 
-  logger.debug(`Invoking ffprobe: ${command}`);
+  logger.debug(`Invoking ffprobe with args: ${args.join(' ')}`);
 
-  const { stdout } = await execAsync(command);
+  const { stdout } = await execFileAsync('ffprobe', args);
   const {
     format: { duration }
   } = JSON.parse(stdout);
@@ -35,23 +58,46 @@ const getFileDuration = async (path: string): Promise<number> => {
 const getTargetDuration = ({ endDate }: Programme): number =>
   endDate.getTime() - Date.now() + config.safetyBuffer;
 
+const execFfmpeg = (path: string, targetSeconds: number, thumbnailData: Buffer | null) =>
+  new Promise(async (resolve, reject) => {
+    const ffmpegArgs = getFfmpegArguments(path, !!thumbnailData, targetSeconds);
+
+    logger.debug(`Invoking ffmpeg with args: ${ffmpegArgs.join(' ')}`);
+    const proc = execFile('ffmpeg', ffmpegArgs);
+    const { stdout, stderr, stdin } = proc;
+    if (thumbnailData) {
+      stdin.write(thumbnailData);
+      stdin.end();
+    }
+
+    const [stdoutContent, stderrContent] = (
+      await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
+    ).map((b) => b.toString('utf-8'));
+
+    proc.on('exit', async (code) => {
+      if (code !== 0) {
+        return reject(new ExecError('Non-zero exit code', stdoutContent, stderrContent));
+      }
+
+      resolve(stderrContent);
+    });
+  });
+
 export const record = async (programme: Programme): Promise<void> => {
   const targetMillis = getTargetDuration(programme);
   const targetSeconds = targetMillis / 1000;
   const path = getInProgressPath(programme);
 
   logger.info(`Recording ${programme.title} for ${targetSeconds} seconds`);
-
   const recordingStart = new Date();
   try {
-    const command = getFfmpegCommand(path, targetSeconds);
-    logger.debug(`Invoking ffmpeg: ${command}`);
+    const thumbnailData = await getThumbnail(programme.thumbnail);
+    const ffmpegOutput = await execFfmpeg(path, targetSeconds, thumbnailData);
 
-    const { stdout } = await execAsync(command);
     const recordingEnd = new Date();
 
     logger.info(`Finished recording: ${path}`);
-    logger.debug(stdout);
+    logger.debug(ffmpegOutput);
 
     const expectedDuration = programme.endDate.getTime() - programme.startDate.getTime();
     const actualDuration = await getFileDuration(path);
@@ -63,15 +109,16 @@ export const record = async (programme: Programme): Promise<void> => {
         start: recordingStart,
         end: recordingEnd
       });
+      await writeThumbnail(programme, thumbnailData);
     } else {
       throw new Error('Recording duration is too short, considering failed');
     }
-  } catch (e) {
-    if (e.stderr) {
-      logger.error(e.stdout);
-      logger.debug(e.stderr);
+  } catch (err) {
+    if (err.stderr) {
+      logger.error(err.stdout);
+      logger.debug(err.stderr);
     } else {
-      logger.error(e);
+      logger.error(err);
     }
 
     if (await renameFailed(programme)) {

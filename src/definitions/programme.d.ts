@@ -7,4 +7,5 @@ type Programme = {
   airingId: string;
   startDate: Date;
   endDate: Date;
+  thumbnail: string;
 };
