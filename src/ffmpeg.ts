@@ -58,22 +58,22 @@ const getFileDuration = async (path: string): Promise<number> => {
 const getTargetDuration = ({ endDate }: Programme): number =>
   endDate.getTime() - Date.now() + config.safetyBuffer;
 
-const execFfmpeg = (path: string, targetSeconds: number, thumbnailData: Buffer | null) =>
-  new Promise(async (resolve, reject) => {
-    const ffmpegArgs = getFfmpegArguments(path, !!thumbnailData, targetSeconds);
+const execFfmpeg = async (path: string, targetSeconds: number, thumbnailData: Buffer | null) => {
+  const ffmpegArgs = getFfmpegArguments(path, !!thumbnailData, targetSeconds);
 
-    logger.debug(`Invoking ffmpeg with args: ${ffmpegArgs.join(' ')}`);
-    const proc = execFile('ffmpeg', ffmpegArgs);
-    const { stdout, stderr, stdin } = proc;
-    if (thumbnailData) {
-      stdin.write(thumbnailData);
-      stdin.end();
-    }
+  logger.debug(`Invoking ffmpeg with args: ${ffmpegArgs.join(' ')}`);
+  const proc = execFile('ffmpeg', ffmpegArgs);
+  const { stdout, stderr, stdin } = proc;
+  if (thumbnailData) {
+    stdin.write(thumbnailData);
+    stdin.end();
+  }
 
-    const [stdoutContent, stderrContent] = (
-      await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
-    ).map((b) => b.toString('utf-8'));
+  const [stdoutContent, stderrContent] = (
+    await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
+  ).map((b) => b.toString('utf-8'));
 
+  return new Promise((resolve, reject) => {
     proc.on('exit', (code) => {
       if (code !== 0) {
         return reject(new ExecError('Non-zero exit code', stdoutContent, stderrContent));
@@ -82,6 +82,7 @@ const execFfmpeg = (path: string, targetSeconds: number, thumbnailData: Buffer |
       resolve(stderrContent);
     });
   });
+};
 
 export const record = async (programme: Programme): Promise<void> => {
   const targetMillis = getTargetDuration(programme);

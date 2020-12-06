@@ -9,7 +9,7 @@ const SCHEDULE_END_OFFSET = 7 * 24 * 60 * 60 * 1000;
 const MAX_CACHE_AGE = 60 * 60 * 1000;
 
 let scheduleData: Array<Programme> = null;
-let scheduleDataTimestamp: number = 0;
+let scheduleDataTimestamp = 0;
 
 const getApiKey = async (): Promise<string> => {
   try {
