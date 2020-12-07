@@ -87,7 +87,7 @@ const execFfmpeg = async (
   return new Promise((resolve, reject) => {
     proc.on('exit', (code) => {
       if (code !== 0) {
-        return reject(new ExecError('Non-zero exit code', stdoutContent, stderrContent));
+        return reject(new ExecError(`Non-zero exit code: ${code}`, stdoutContent, stderrContent));
       }
 
       resolve(stderrContent);
