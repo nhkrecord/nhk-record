@@ -5,6 +5,7 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "module": "commonjs",
+    "resolveJsonModule": true,
     "sourceMap": true,
     "target": "es2017",
     "outDir": "lib"
