@@ -1,12 +1,13 @@
-name: Lint
-
-on: push
-
+name: Release
+on:
+  push:
+    branches:
+      - master
 jobs:
-  lint:
+  release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout codde
         uses: actions/checkout@v2
 
       - name: Setup Node
@@ -23,10 +24,12 @@ jobs:
             ${{ runner.OS }}-node-
             ${{ runner.OS }}-
 
-      - name: Install modules
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
         env:
           HUSKY_SKIP_INSTALL: 1
 
-      - name: Run ESLint
-        run: npx eslint src
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
