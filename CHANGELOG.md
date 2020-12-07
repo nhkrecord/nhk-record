@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/nhkrecord/nhk-record/compare/v0.4.0...v0.4.1) (2020-12-07)
+
+
+### Bug Fixes
+
+* use ISO 8601 format for metadata date ([#9](https://github.com/nhkrecord/nhk-record/issues/9)) ([44055a7](https://github.com/nhkrecord/nhk-record/commit/44055a7d4e668fef2cca4429758959c56e6b8854))
+
 # [0.4.0](https://github.com/nhkrecord/nhk-record/compare/v0.3.0...v0.4.0) (2020-12-07)
 
 

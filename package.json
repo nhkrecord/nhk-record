@@ -1,6 +1,6 @@
 {
   "name": "nhk-record",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "commit": "cz",
@@ -73,7 +73,12 @@
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
-      ["@semantic-release/npm", { "npmPublish": false }],
+      [
+        "@semantic-release/npm",
+        {
+          "npmPublish": false
+        }
+      ],
       "@semantic-release/git",
       "@semantic-release/github"
     ]
