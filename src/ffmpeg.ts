@@ -22,31 +22,29 @@ const getFfmpegArguments = (
   durationSeconds: number
 ): Array<string> =>
   [
-    '-i',
-    config.streamUrl,
-    thumbnail ? ['-i', '-', '-map', '0', '-map', '1', '-disposition:v:1', 'attached_pic'] : [],
-    '-t',
-    `${durationSeconds}`,
-    '-codec',
-    'copy',
-    '-f',
-    'mp4',
+    ['-i', config.streamUrl],
+    thumbnail
+      ? [
+          ['-i', '-'],
+          ['-map', '0'],
+          ['-map', '1'],
+          ['-disposition:v:1', 'attached_pic']
+        ]
+      : [],
+    ['-t', `${durationSeconds}`],
+    ['-codec', 'copy'],
+    ['-f', 'mp4'],
     programme.title ? ['-metadata', `show=${programme.title}`] : [],
     programme.subtitle ? ['-metadata', `title=${programme.subtitle}`] : [],
     programme.description ? ['-metadata', `description=${programme.description}`] : [],
     programme.content ? ['-metadata', `synopsis=${programme.content}`] : [],
-    programme.startDate ? ['-metadata', `date=${programme.startDate}`] : [],
+    programme.startDate ? ['-metadata', `date=${programme.startDate.toISOString()}`] : [],
+    ['-metadata', 'network=NHK World'],
     path
-  ].flat();
+  ].flat(2);
 
-const getFfprobeArguments = (path: string): Array<string> => [
-  '-v',
-  'quiet',
-  '-print_format',
-  'json',
-  '-show_format',
-  path
-];
+const getFfprobeArguments = (path: string): Array<string> =>
+  [['-v', 'quiet'], ['-print_format', 'json'], '-show_format', path].flat();
 
 const getFileDuration = async (path: string): Promise<number> => {
   const args = getFfprobeArguments(path);
