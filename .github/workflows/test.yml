@@ -1,9 +1,9 @@
-name: Lint
+name: Test
 
 on: push
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,5 +28,13 @@ jobs:
         env:
           HUSKY_SKIP_INSTALL: 1
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Publish unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1.6
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: test-output/**/*.xml
+
