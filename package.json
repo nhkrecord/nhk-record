@@ -5,7 +5,10 @@
     "build": "tsc -b tsconfig.json",
     "commit": "cz",
     "lint": "eslint src",
-    "start": "npm run build && node lib/src/index.js"
+    "start": "npm run build && node lib/src/index.js",
+    "test": "jest",
+    "coverage": "jest --coverage --no-cache",
+    "test:ci": "jest --ci"
   },
   "author": "",
   "license": "ISC",
@@ -28,6 +31,7 @@
     "@semantic-release/commit-analyzer": "^8.0.1",
     "@semantic-release/git": "^9.0.0",
     "@semantic-release/github": "^7.2.0",
+    "@semantic-release/npm": "^7.0.9",
     "@semantic-release/release-notes-generator": "^9.0.1",
     "@types/app-root-path": "^1.2.4",
     "@types/lodash.pick": "^4.4.6",
@@ -42,8 +46,11 @@
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^7.13.0",
     "husky": "^4.3.4",
+    "jest": "^26.6.3",
+    "jest-junit": "^12.0.0",
     "prettier": "^2.1.2",
     "semantic-release": "^17.3.0",
+    "ts-jest": "^26.4.4",
     "typescript": "^4.0.5"
   },
   "config": {
@@ -66,6 +73,7 @@
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
+      ["@semantic-release/npm", { "npmPublish": false }],
       "@semantic-release/git",
       "@semantic-release/github"
     ]
