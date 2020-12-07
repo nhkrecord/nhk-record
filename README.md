@@ -1,8 +1,8 @@
 # nhk-record
 
 ## Dependencies
-- [Node.js](https://github.com/nodejs/node)
-- [FFmpeg](https://github.com/FFmpeg/FFmpeg)
+- [Node.js](https://github.com/nodejs/node) `>= 15.x`
+- [FFmpeg](https://github.com/FFmpeg/FFmpeg) `>= 4.x`
 
 ## Installing
 ```
