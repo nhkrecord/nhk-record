@@ -9,6 +9,7 @@ RUN npm install --quiet --only=prod
 
 FROM base AS dependencies
 ENV HUSKY_SKIP_INSTALL=1
+COPY config.json /app/
 COPY src /app/src
 RUN npm install --quiet --only=dev
 RUN npm run build
