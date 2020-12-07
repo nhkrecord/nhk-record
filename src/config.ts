@@ -1,8 +1,8 @@
-import appRoot from 'app-root-path';
-import { join } from 'path';
 import yargs from 'yargs';
+import defaultConfig from '../config.json';
 
 type Config = {
+  assetsUrl: string;
   logFile: string;
   logLevelConsole: 'debug' | 'info' | 'error' | 'none';
   logLevelFile: 'debug' | 'info' | 'error' | 'none';
@@ -15,6 +15,11 @@ type Config = {
 };
 
 const config = yargs(process.argv.slice(2))
+  .option('a', {
+    alias: 'assets-url',
+    describe: 'NHK assets url (for JS & thumbnails)',
+    type: 'string'
+  })
   .option('b', {
     alias: 'safety-buffer',
     describe: 'Number of extra milliseconds to record before and after scheduled airtime',
@@ -24,7 +29,6 @@ const config = yargs(process.argv.slice(2))
     alias: 'config',
     describe: 'Location of config file',
     config: true,
-    default: join(appRoot.toString(), 'config.json'),
     type: 'string'
   })
   .option('d', {
@@ -60,6 +64,11 @@ const config = yargs(process.argv.slice(2))
     type: 'string',
     array: true
   })
+  .option('s', {
+    alias: 'schedule-url',
+    describe: 'NHK schedule API url',
+    type: 'string'
+  })
   .option('t', {
     alias: 'minimum-duration',
     describe: 'Minimum programme run time to record in milliseconds',
@@ -67,4 +76,4 @@ const config = yargs(process.argv.slice(2))
   }).argv;
 
 //TODO: validate config
-export default (config as unknown) as Config;
+export default ({ ...defaultConfig, ...config } as unknown) as Config;

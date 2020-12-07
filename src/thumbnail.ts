@@ -1,8 +1,9 @@
 import fetch from 'node-fetch';
+import config from './config';
 import logger from './logger';
 
 export const getThumbnail = async (thumbnailUri: string): Promise<Buffer | null> => {
-  const url = `https://www3.nhk.or.jp${thumbnailUri}`;
+  const url = `${config.assetsUrl}${thumbnailUri}`;
 
   logger.info(`Retrieving thumbnail: ${url}`);
   try {

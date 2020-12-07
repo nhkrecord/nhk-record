@@ -2,16 +2,16 @@ import { execFile } from 'child_process';
 import streamToPromise from 'stream-to-promise';
 import { promisify } from 'util';
 import config from './config';
+import { ExecError } from './error';
 import logger from './logger';
 import {
   getInProgressPath,
   renameFailed,
   renameSuccessful,
-  writeThumbnail,
-  writeMetadata
+  writeMetadata,
+  writeThumbnail
 } from './storage';
 import { getThumbnail } from './thumbnail';
-import { ExecError } from './error';
 
 const execFileAsync = promisify(execFile);
 

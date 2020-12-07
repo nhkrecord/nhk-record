@@ -1,11 +1,14 @@
 {
+  "assetsUrl": "https://www3.nhk.or.jp",
   "logFile": "/logs/nhk-record.log",
   "logLevelConsole": "debug",
   "logLevelFile": "debug",
   "matchPattern": [
+    "*"
   ],
   "minimumDuration": 240000,
   "safetyBuffer": 40000,
   "saveDir": "/recordings/",
+  "scheduleUrl": "https://api.nhk.or.jp",
   "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp/index_4M.m3u8"
 }

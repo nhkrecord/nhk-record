@@ -13,7 +13,7 @@ let scheduleDataTimestamp = 0;
 
 const getApiKey = async (): Promise<string> => {
   try {
-    const res = await fetch('https://www3.nhk.or.jp/nhkworld/common/js/common.js');
+    const res = await fetch(`${config.assetsUrl}/nhkworld/common/js/common.js`);
     const text = await res.text();
     const match = text.match(/window\.nw_api_key=window\.nw_api_key\|\|"(?<apiKey>[^"]+)"/);
     const apiKey = match?.groups?.apiKey;
@@ -35,7 +35,7 @@ const getScheduleForPeriod = async (apiKey: string, start: Date, end: Date): Pro
   const endMillis = end.getTime();
 
   const res = await fetch(
-    `https://api.nhk.or.jp/nhkworld/epg/v7a/world/s${startMillis}-e${endMillis}.json?apikey=${apiKey}`
+    `${config.scheduleUrl}/nhkworld/epg/v7a/world/s${startMillis}-e${endMillis}.json?apikey=${apiKey}`
   );
 
   return await res.json();

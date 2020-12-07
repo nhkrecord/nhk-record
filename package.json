@@ -3,14 +3,14 @@
   "version": "0.2.1",
   "scripts": {
     "build": "tsc -b tsconfig.json",
-    "start": "npm run build && node lib/index.js",
-    "commit": "cz"
+    "commit": "cz",
+    "lint": "eslint src",
+    "start": "npm run build && node lib/src/index.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "app-root-path": "^3.0.0",
     "hasha": "^5.2.2",
     "lodash.pick": "^4.4.0",
     "micromatch": "^4.0.2",

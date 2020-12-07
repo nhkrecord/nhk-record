@@ -23,6 +23,7 @@ Options can be specified via the CLI or via a config file.
 ```
       --help               Show help                                   [boolean]
       --version            Show version number                         [boolean]
+  -a, --assets-url         NHK assets url (for JS & thumbnails)         [string]
   -b, --safety-buffer      Number of extra milliseconds to record before and
                            after scheduled airtime                      [number]
   -c, --config             Location of config file                      [string]
@@ -36,6 +37,7 @@ Options can be specified via the CLI or via a config file.
                             [string] [choices: "debug", "info", "error", "none"]
   -m, --match-pattern      Glob pattern of desired program name (can be used
                            multiple times)                               [array]
+  -s, --schedule-url       NHK schedule API url                         [string]
   -t, --minimum-duration   Minimum programme run time to record in milliseconds
                                                                         [number]
 ```
@@ -45,6 +47,7 @@ The location of the config file can be specified with the `-c` option.
 
 ```
 {
+  "assetsUrl": "https://www3.nhk.or.jp",
   "logFile": "/logs/nhk-record.log",
   "logLevelConsole": "debug",
   "logLevelFile": "debug",
@@ -52,6 +55,7 @@ The location of the config file can be specified with the `-c` option.
   "minimumDuration": 240000,
   "safetyBuffer": 40000,
   "saveDir": "/recordings/",
+  "scheduleUrl": "https://api.nhk.or.jp",
   "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp/index_4M.m3u8"
 }
 ```
