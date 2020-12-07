@@ -17,6 +17,7 @@ const execFileAsync = promisify(execFile);
 
 const getFfmpegArguments = (
   path: string,
+  programme: Programme,
   thumbnail: boolean,
   durationSeconds: number
 ): Array<string> =>
@@ -30,6 +31,11 @@ const getFfmpegArguments = (
     'copy',
     '-f',
     'mp4',
+    programme.title ? ['-metadata', `show=${programme.title}`] : [],
+    programme.subtitle ? ['-metadata', `title=${programme.subtitle}`] : [],
+    programme.description ? ['-metadata', `description=${programme.description}`] : [],
+    programme.content ? ['-metadata', `synopsis=${programme.content}`] : [],
+    programme.startDate ? ['-metadata', `date=${programme.startDate}`] : [],
     path
   ].flat();
 
@@ -58,8 +64,13 @@ const getFileDuration = async (path: string): Promise<number> => {
 const getTargetDuration = ({ endDate }: Programme): number =>
   endDate.getTime() - Date.now() + config.safetyBuffer;
 
-const execFfmpeg = async (path: string, targetSeconds: number, thumbnailData: Buffer | null) => {
-  const ffmpegArgs = getFfmpegArguments(path, !!thumbnailData, targetSeconds);
+const execFfmpeg = async (
+  path: string,
+  targetSeconds: number,
+  programme: Programme,
+  thumbnailData: Buffer | null
+) => {
+  const ffmpegArgs = getFfmpegArguments(path, programme, !!thumbnailData, targetSeconds);
 
   logger.debug(`Invoking ffmpeg with args: ${ffmpegArgs.join(' ')}`);
   const proc = execFile('ffmpeg', ffmpegArgs);
@@ -93,7 +104,7 @@ export const record = async (programme: Programme): Promise<void> => {
   const recordingStart = new Date();
   try {
     const thumbnailData = await getThumbnail(programme.thumbnail);
-    const ffmpegOutput = await execFfmpeg(path, targetSeconds, thumbnailData);
+    const ffmpegOutput = await execFfmpeg(path, targetSeconds, programme, thumbnailData);
 
     const recordingEnd = new Date();
 
