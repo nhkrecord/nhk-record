@@ -56,7 +56,7 @@ The location of the config file can be specified with the `-c` option.
   "safetyBuffer": 40000,
   "saveDir": "/recordings/",
   "scheduleUrl": "https://api.nhk.or.jp",
-  "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp/index_4M.m3u8"
+  "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8"
 }
 ```
 
