@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="1" failures="0" errors="0" time="0.579">
-  <testsuite name="utils" errors="0" failures="0" skipped="0" timestamp="2020-12-07T02:21:44" time="0.527" tests="1">
-    <testcase classname="utils parseDate should convert epoch string to equivalent Date" name="utils parseDate should convert epoch string to equivalent Date" time="0.002">
-    </testcase>
-  </testsuite>
-</testsuites>
