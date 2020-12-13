@@ -1,6 +1,6 @@
 {
   "name": "nhk-record",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "commit": "cz",

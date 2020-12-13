@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/nhkrecord/nhk-record/compare/v0.4.2...v0.5.0) (2020-12-13)
+
+
+### Features
+
+* expose option defaults on command line ([#14](https://github.com/nhkrecord/nhk-record/issues/14)) ([bc69997](https://github.com/nhkrecord/nhk-record/commit/bc69997640858ee1aa65290641dc77a65cabfadd)), closes [#12](https://github.com/nhkrecord/nhk-record/issues/12)
+
 ## [0.4.2](https://github.com/nhkrecord/nhk-record/compare/v0.4.1...v0.4.2) (2020-12-08)
 
 
