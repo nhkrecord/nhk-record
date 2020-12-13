@@ -14,6 +14,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "app-root-path": "^3.0.0",
     "hasha": "^5.2.2",
     "lodash.pick": "^4.4.0",
     "micromatch": "^4.0.2",
