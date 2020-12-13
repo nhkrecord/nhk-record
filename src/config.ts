@@ -1,18 +1,11 @@
 import yargs from 'yargs';
 import defaultConfig from '../config.json';
 
-type Config = {
-  assetsUrl: string;
-  logFile: string;
+type inferredConfigType = typeof defaultConfig;
+interface Config extends inferredConfigType {
   logLevelConsole: 'debug' | 'info' | 'error' | 'none';
   logLevelFile: 'debug' | 'info' | 'error' | 'none';
-  matchPattern: Array<string>;
-  minimumDuration: number;
-  safetyBuffer: number;
-  saveDir: string;
-  scheduleUrl: string;
-  streamUrl: string;
-};
+}
 
 const config = yargs(process.argv.slice(2))
   .option('a', {
@@ -58,6 +51,12 @@ const config = yargs(process.argv.slice(2))
     type: 'string',
     default: defaultConfig.logLevelConsole
   })
+  .option('K', {
+    alias: 'keep-untrimmed',
+    describe: 'If auto-trimming is enabled, also keep the original untrimmed copy',
+    type: 'boolean',
+    default: defaultConfig.keepUntrimmed
+  })
   .option('l', {
     alias: 'log-level-file',
     describe: 'Logging level to output to log file',
@@ -83,6 +82,12 @@ const config = yargs(process.argv.slice(2))
     describe: 'Minimum programme run time to record in milliseconds',
     type: 'number',
     default: defaultConfig.minimumDuration
+  })
+  .option('T', {
+    alias: 'trim',
+    describe: 'Attempt to automatically trim video',
+    type: 'boolean',
+    default: defaultConfig.trim
   }).argv;
 
 //TODO: validate config

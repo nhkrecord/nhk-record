@@ -1,4 +1,4 @@
-import pick from 'lodash.pick';
+import { pick } from 'ramda';
 import fetch from 'node-fetch';
 import config from './config';
 import logger from './logger';
@@ -56,7 +56,7 @@ export const getSchedule = async (): Promise<Array<Programme>> => {
 
   if (items) {
     return items.map((item) => ({
-      ...pick(item, ['title', 'subtitle', 'seriesId', 'airingId', 'description', 'thumbnail']),
+      ...pick(['title', 'subtitle', 'seriesId', 'airingId', 'description', 'thumbnail'])(item),
       content: item.content_clean,
       startDate: parseDate(item.pubDate),
       endDate: parseDate(item.endDate)

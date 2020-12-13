@@ -1,4 +1,4 @@
-type ScheduleItem = {
+interface ScheduleItem {
   title: string;
   subtitle: string;
   content_clean: string;
@@ -8,10 +8,10 @@ type ScheduleItem = {
   pubDate: string;
   endDate: string;
   thumbnail: string;
-};
+}
 
-type Schedule = {
+interface Schedule {
   channel: {
     item: Array<ScheduleItem>;
   };
-};
+}
