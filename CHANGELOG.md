@@ -1,3 +1,10 @@
+## [0.5.2](https://github.com/nhkrecord/nhk-record/compare/v0.5.1...v0.5.2) (2020-12-14)
+
+
+### Bug Fixes
+
+* remove -reconnect_at_eof ([#18](https://github.com/nhkrecord/nhk-record/issues/18)) ([44443d8](https://github.com/nhkrecord/nhk-record/commit/44443d8c3a4009af1d9316f37868b72c95bd70e6))
+
 ## [0.5.1](https://github.com/nhkrecord/nhk-record/compare/v0.5.0...v0.5.1) (2020-12-14)
 
 
