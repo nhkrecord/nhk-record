@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/nhkrecord/nhk-record/compare/v0.5.0...v0.5.1) (2020-12-14)
+
+
+### Bug Fixes
+
+* retry on stream failure ([#17](https://github.com/nhkrecord/nhk-record/issues/17)) ([19a5896](https://github.com/nhkrecord/nhk-record/commit/19a58965fb7fc0e9f23974451327a3ec3dc55c83))
+
 # [0.5.0](https://github.com/nhkrecord/nhk-record/compare/v0.4.2...v0.5.0) (2020-12-13)
 
 
