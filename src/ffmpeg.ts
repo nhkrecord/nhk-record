@@ -57,25 +57,31 @@ const MINIMUM_BOUNDARY_SILENCE_SECONDS = 0.1;
 const STRATEGIES = [
   {
     name: 'black-logo',
-    filters: [8],
+    filters: [9],
     minSilenceSeconds: 1.5,
     minFrames: 5
   },
   {
     name: 'white-logo',
-    filters: [10],
+    filters: [11],
+    minSilenceSeconds: 1.5,
+    minFrames: 5
+  },
+  {
+    name: 'white-borders-logo',
+    filters: [13],
     minSilenceSeconds: 1.5,
     minFrames: 5
   },
   {
     name: 'no-logo',
-    filters: [11],
+    filters: [14],
     minSilenceSeconds: 0.1,
     minFrames: 3
   },
   {
     name: 'newsline',
-    filters: [13],
+    filters: [16],
     minSilenceSeconds: 0,
     minFrames: 1
   }
@@ -111,6 +117,7 @@ const getFfmpegBoundaryDetectionArguments = (
     ['-i', path],
     ['-i', join(appRootPath.path, 'data/black_cropped.jpg')],
     ['-i', join(appRootPath.path, 'data/white_cropped.jpg')],
+    ['-i', join(appRootPath.path, 'data/white_borders_cropped.jpg')],
     ['-i', join(appRootPath.path, 'data/newsline_intro.jpg')],
     [
       '-filter_complex',
@@ -119,17 +126,20 @@ const getFfmpegBoundaryDetectionArguments = (
         '[0:0]extractplanes=y[vy]',
         '[1]extractplanes=y[by]',
         '[2]extractplanes=y[wy]',
-        '[3]extractplanes=y[nly]',
+        '[3]extractplanes=y[wby]',
+        '[4]extractplanes=y[nly]',
         '[vy]split=outputs=2[vy0][vy1]',
         // Crop top left corner
         '[vy0]crop=w=960:h=540:x=0:y=0[cvy]',
-        '[cvy]split=outputs=3[cvy0][cvy1][cvy2]',
+        '[cvy]split=outputs=4[cvy0][cvy1][cvy2][cvy3]',
         // Detect black frames with logo
         '[cvy0][by]blend=difference,blackframe=99',
         // Detect white frames with logo
         '[cvy1][wy]blend=difference,blackframe=99',
+        // Detect white frames with logo
+        '[cvy2][wby]blend=difference,blackframe=99',
         // Detect black frames with no logo
-        '[cvy2]blackframe=99',
+        '[cvy3]blackframe=99',
         // Detect Newsline intro
         '[vy1][nly]blend=difference,blackframe=99',
         // Detect silences greater than MINIMUM_BOUNDARY_SILENCE_SECONDS

@@ -13,7 +13,7 @@ import {
 } from './storage';
 import { getThumbnail } from './thumbnail';
 
-const START_BOUNDARY_SEARCH_DURATION = 60_000;
+const START_BOUNDARY_SEARCH_DURATION = 45_000;
 const END_BOUNDARY_SEARCH_DURATION = 180_000;
 const START_BOUNDARY_SEARCH_BUFFER_DURATION = 10_000;
 const END_BOUNDARY_SEARCH_BUFFER_DURATION = 30_000;
@@ -113,7 +113,7 @@ export const record = async (programme: Programme): Promise<void> => {
             throw new Error('Failed to trim');
           }
 
-          await trim(path, trimmedPath, start, end);
+          await trim(path, trimmedPath, Math.max(0, start - 0.1), end);
           const trimmedDuration = await getFileDuration(trimmedPath);
           logger.info(`Trimmed to ${trimmedDuration} ms`);
 
