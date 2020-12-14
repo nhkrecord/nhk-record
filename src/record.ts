@@ -18,8 +18,8 @@ const END_BOUNDARY_SEARCH_DURATION = 180_000;
 const START_BOUNDARY_SEARCH_BUFFER_DURATION = 10_000;
 const END_BOUNDARY_SEARCH_BUFFER_DURATION = 30_000;
 const MINIMUM_PROGRAMME_DURATION = 30_000;
-const INTERSTITIAL_DURATION = 120_000;
-const INTERSTITIAL_DURATION_TOLERANCE = 3_000;
+const INTERSTITIAL_DURATIONS = [60_000, 120_000];
+const INTERSTITIAL_DURATION_TOLERANCE = 1_500;
 
 const getTargetDuration = ({ endDate }: Programme): number =>
   endDate.getTime() - Date.now() + config.safetyBuffer;
@@ -64,7 +64,11 @@ export const findTrimParameters = async (
     const [{ start: penultimate }, { start: ultimate }] = takeLast(2)(endBoundaryCandidates);
     const interval = ultimate - penultimate;
     logger.debug(`Interval between last 2 boundary candidates: ${interval} ms`);
-    if (Math.abs(interval - INTERSTITIAL_DURATION) < INTERSTITIAL_DURATION_TOLERANCE) {
+    if (
+      INTERSTITIAL_DURATIONS.map((d) => Math.abs(interval - d)).some(
+        (d) => d < INTERSTITIAL_DURATION_TOLERANCE
+      )
+    ) {
       logger.debug(`Taking second-to-last candidate as end`);
       logger.info(`Detected end at ${penultimate} ms`);
       return { start, end: penultimate };
