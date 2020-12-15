@@ -10,5 +10,6 @@
   "saveDir": "/recordings/",
   "scheduleUrl": "https://api.nhk.or.jp",
   "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8",
+  "timeOffset": 0,
   "trim": true
 }

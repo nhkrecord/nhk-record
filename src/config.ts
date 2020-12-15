@@ -71,6 +71,12 @@ const config = yargs(process.argv.slice(2))
     array: true,
     default: defaultConfig.matchPattern
   })
+  .option('o', {
+    alias: 'time-offset',
+    describe: 'Time offset relative to system time in milliseconds (e.g. to handle stream delays)',
+    type: 'number',
+    default: defaultConfig.timeOffset
+  })
   .option('s', {
     alias: 'schedule-url',
     describe: 'NHK schedule API url',

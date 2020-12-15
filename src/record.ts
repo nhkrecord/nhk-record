@@ -12,6 +12,7 @@ import {
   writeThumbnail
 } from './storage';
 import { getThumbnail } from './thumbnail';
+import { currDate, now } from './utils';
 
 const START_BOUNDARY_SEARCH_DURATION = 45_000;
 const END_BOUNDARY_SEARCH_DURATION = 180_000;
@@ -22,7 +23,7 @@ const INTERSTITIAL_DURATIONS = [60_000, 120_000];
 const INTERSTITIAL_DURATION_TOLERANCE = 1_500;
 
 const getTargetDuration = ({ endDate }: Programme): number =>
-  endDate.getTime() - Date.now() + config.safetyBuffer;
+  endDate.getTime() - now() + config.safetyBuffer;
 
 interface TrimParameters {
   start?: number;
@@ -90,12 +91,12 @@ export const record = async (programme: Programme): Promise<void> => {
   const path = getInProgressPath(programme);
 
   logger.info(`Recording ${programme.title} for ${targetSeconds} seconds`);
-  const recordingStart = new Date();
+  const recordingStart = currDate();
   try {
     const thumbnailData = await getThumbnail(programme.thumbnail);
     const streamCaptureOutput = await captureStream(path, targetSeconds, programme, thumbnailData);
 
-    const recordingEnd = new Date();
+    const recordingEnd = currDate();
 
     logger.info(`Finished recording: ${path}`);
     logger.debug(streamCaptureOutput);
@@ -163,7 +164,7 @@ export const record = async (programme: Programme): Promise<void> => {
     if (await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.FAILED)) {
       await writeMetadata(programme, false, {
         start: recordingStart,
-        end: new Date()
+        end: currDate()
       });
     }
 

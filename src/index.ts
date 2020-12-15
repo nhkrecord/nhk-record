@@ -4,7 +4,7 @@ import { record } from './record';
 import logger from './logger';
 import { getCurrentProgramme } from './schedule';
 import { makeSaveDirectory, recordingExists } from './storage';
-import { sleep } from './utils';
+import { sleep, now } from './utils';
 
 const isDesiredProgramme = (programme: Programme) => {
   const duration = programme.endDate.getTime() - programme.startDate.getTime();
@@ -51,7 +51,7 @@ const main = async () => {
       logger.info(`Currently airing programme is: ${title}`);
       recordIfDesired(programme);
 
-      const sleepMillis = endDate.getTime() - Date.now() - config.safetyBuffer;
+      const sleepMillis = endDate.getTime() - now() - config.safetyBuffer;
       logger.info(`Sleeping ${sleepMillis / 1000} seconds until next programme`);
       await sleep(sleepMillis);
     } catch (e) {
