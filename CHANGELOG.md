@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/nhkrecord/nhk-record/compare/v0.5.2...v0.6.0) (2020-12-15)
+
+
+### Features
+
+* add --time-offset option ([#20](https://github.com/nhkrecord/nhk-record/issues/20)) ([5565b0a](https://github.com/nhkrecord/nhk-record/commit/5565b0aa71e53aee819a566f602ebbcc464d917c))
+
 ## [0.5.2](https://github.com/nhkrecord/nhk-record/compare/v0.5.1...v0.5.2) (2020-12-14)
 
 
