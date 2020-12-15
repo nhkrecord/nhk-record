@@ -1,18 +1,11 @@
 import yargs from 'yargs';
 import defaultConfig from '../config.json';
 
-type Config = {
-  assetsUrl: string;
-  logFile: string;
+type inferredConfigType = typeof defaultConfig;
+interface Config extends inferredConfigType {
   logLevelConsole: 'debug' | 'info' | 'error' | 'none';
   logLevelFile: 'debug' | 'info' | 'error' | 'none';
-  matchPattern: Array<string>;
-  minimumDuration: number;
-  safetyBuffer: number;
-  saveDir: string;
-  scheduleUrl: string;
-  streamUrl: string;
-};
+}
 
 const config = yargs(process.argv.slice(2))
   .option('a', {
@@ -71,6 +64,12 @@ const config = yargs(process.argv.slice(2))
     type: 'string',
     array: true,
     default: defaultConfig.matchPattern
+  })
+  .option('o', {
+    alias: 'time-offset',
+    describe: 'Time offset relative to system time in milliseconds (e.g. to handle stream delays)',
+    type: 'number',
+    default: defaultConfig.timeOffset
   })
   .option('s', {
     alias: 'schedule-url',

@@ -12,6 +12,7 @@ import {
   writeThumbnail
 } from './storage';
 import { getThumbnail } from './thumbnail';
+import { currDate, now } from './utils';
 
 const execFileAsync = promisify(execFile);
 
@@ -63,7 +64,7 @@ const getFileDuration = async (path: string): Promise<number> => {
 };
 
 const getTargetDuration = ({ endDate }: Programme): number =>
-  endDate.getTime() - Date.now() + config.safetyBuffer;
+  endDate.getTime() - now() + config.safetyBuffer;
 
 const execFfmpeg = async (
   path: string,
@@ -102,12 +103,12 @@ export const record = async (programme: Programme): Promise<void> => {
   const path = getInProgressPath(programme);
 
   logger.info(`Recording ${programme.title} for ${targetSeconds} seconds`);
-  const recordingStart = new Date();
+  const recordingStart = currDate();
   try {
     const thumbnailData = await getThumbnail(programme.thumbnail);
     const ffmpegOutput = await execFfmpeg(path, targetSeconds, programme, thumbnailData);
 
-    const recordingEnd = new Date();
+    const recordingEnd = currDate();
 
     logger.info(`Finished recording: ${path}`);
     logger.debug(ffmpegOutput);
@@ -140,7 +141,7 @@ export const record = async (programme: Programme): Promise<void> => {
     if (await renameFailed(programme)) {
       await writeMetadata(programme, false, {
         start: recordingStart,
-        end: new Date()
+        end: currDate()
       });
     }
 

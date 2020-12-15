@@ -3,12 +3,11 @@
   "logFile": "/logs/nhk-record.log",
   "logLevelConsole": "debug",
   "logLevelFile": "debug",
-  "matchPattern": [
-    "*"
-  ],
+  "matchPattern": ["*"],
   "minimumDuration": 240000,
   "safetyBuffer": 40000,
   "saveDir": "/recordings/",
   "scheduleUrl": "https://api.nhk.or.jp",
-  "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8"
+  "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8",
+  "timeOffset": 0
 }
