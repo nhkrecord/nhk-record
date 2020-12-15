@@ -36,8 +36,7 @@ if (config.logFile && config.logLevelFile !== 'none') {
       filename: config.logFile,
       maxsize: 1024 * 1024 * 5,
       maxFiles: 10,
-      tailable: true,
-      zippedArchive: true
+      tailable: true
     })
   );
 }
