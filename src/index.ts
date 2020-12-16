@@ -4,7 +4,7 @@ import { record } from './record';
 import logger from './logger';
 import { getCurrentProgramme } from './schedule';
 import { makeSaveDirectory, recordingExists } from './storage';
-import { sleep, now } from './utils';
+import { now, sleep } from './utils';
 
 const isDesiredProgramme = (programme: Programme) => {
   const duration = programme.endDate.getTime() - programme.startDate.getTime();

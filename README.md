@@ -48,12 +48,13 @@ Options can be specified via the CLI or via a config file.
          [string] [choices: "debug", "info", "error", "none"] [default: "debug"]
   -m, --match-pattern      Glob pattern of desired program name (can be used
                            multiple times)              [array] [default: ["*"]]
+  -o, --time-offset        Time offset relative to system time in milliseconds
+                           (e.g. to handle stream delays)  [number] [default: 0]
   -s, --schedule-url       NHK schedule API url
                                      [string] [default: "https://api.nhk.or.jp"]
   -t, --minimum-duration   Minimum programme run time to record in milliseconds
                                                       [number] [default: 240000]
   -T, --trim               Attempt to automatically trim video
-                                                       [boolean] [default: true]
 ```
 
 ### Config file
@@ -73,7 +74,8 @@ The location of the config file can be specified with the `-c` option.
   "saveDir": "/recordings/",
   "scheduleUrl": "https://api.nhk.or.jp",
   "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8",
-  "trim": true
+  "trim": true,
+  "timeOffset": 0
 }
 ```
 

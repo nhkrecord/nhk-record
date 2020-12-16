@@ -1,5 +1,5 @@
-import { pick } from 'ramda';
 import fetch from 'node-fetch';
+import { pick } from 'ramda';
 import config from './config';
 import logger from './logger';
 import { now, parseDate } from './utils';
