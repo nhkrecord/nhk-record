@@ -1,4 +1,4 @@
-import { last, takeLast } from 'ramda';
+import { head, last } from 'ramda';
 import config from './config';
 import { captureStream, detectPotentialBoundaries, getFileDuration, trim } from './ffmpeg';
 import logger from './logger';
@@ -19,8 +19,8 @@ const END_BOUNDARY_SEARCH_DURATION = 180_000;
 const START_BOUNDARY_SEARCH_BUFFER_DURATION = 10_000;
 const END_BOUNDARY_SEARCH_BUFFER_DURATION = 30_000;
 const MINIMUM_PROGRAMME_DURATION = 30_000;
-const INTERSTITIAL_DURATIONS = [60_000, 120_000];
-const INTERSTITIAL_DURATION_TOLERANCE = 1_500;
+const INTERSTITIAL_DURATION_DIVISOR = 30_000;
+const INTERSTITIAL_DURATION_TOLERANCE = 1_000;
 
 const getTargetDuration = ({ endDate }: Programme): number =>
   endDate.getTime() - now() + config.safetyBuffer;
@@ -47,7 +47,7 @@ export const findTrimParameters = async (
     return {};
   }
 
-  const start = last(startBoundaryCandidates).end;
+  const start = last(startBoundaryCandidates).start;
   logger.info(`Detected start at ${start} ms`);
 
   const endSearchTime = Math.max(
@@ -61,22 +61,30 @@ export const findTrimParameters = async (
     END_BOUNDARY_SEARCH_DURATION + END_BOUNDARY_SEARCH_BUFFER_DURATION + config.safetyBuffer
   );
 
-  if (endBoundaryCandidates.length >= 2) {
-    const [{ start: penultimate }, { start: ultimate }] = takeLast(2)(endBoundaryCandidates);
-    const interval = ultimate - penultimate;
-    logger.debug(`Interval between last 2 boundary candidates: ${interval} ms`);
-    if (
-      INTERSTITIAL_DURATIONS.map((d) => Math.abs(interval - d)).some(
-        (d) => d < INTERSTITIAL_DURATION_TOLERANCE
-      )
-    ) {
-      logger.debug(`Taking second-to-last candidate as end`);
-      logger.info(`Detected end at ${penultimate} ms`);
-      return { start, end: penultimate };
-    }
-  }
+  const { start: lastCandidateStart } = last(endBoundaryCandidates);
+  const filteredCandidates = endBoundaryCandidates
+    .map((currCandidate, i) => {
+      const diffFromLast = Math.abs(lastCandidateStart - currCandidate.start);
+      const modulus = Math.abs(
+        INTERSTITIAL_DURATION_DIVISOR * Math.round(diffFromLast / INTERSTITIAL_DURATION_DIVISOR) -
+          diffFromLast
+      );
 
-  const end = last(endBoundaryCandidates)?.start;
+      logger.debug(`Candidate ${i} diff from last: ${diffFromLast} ms, modulus: ${modulus}`);
+
+      return {
+        ...currCandidate,
+        modulus: modulus
+      };
+    })
+    .filter(({ modulus }) => modulus <= INTERSTITIAL_DURATION_TOLERANCE);
+
+  logger.debug(
+    `Found ${filteredCandidates.length} candidates at ${INTERSTITIAL_DURATION_DIVISOR} ms intervals from last`,
+    filteredCandidates
+  );
+
+  const end = head(filteredCandidates)?.start;
   if (end) {
     logger.info(`Detected end at ${end} ms`);
   } else {
@@ -106,6 +114,7 @@ export const record = async (programme: Programme): Promise<void> => {
     logger.debug(`'${path}' duration is ${actualDuration} ms`);
 
     if (actualDuration - expectedDuration > 0) {
+      let trimmed = false;
       if (config.trim) {
         const trimmedPath = getTrimmedPath(programme);
         try {
@@ -114,7 +123,7 @@ export const record = async (programme: Programme): Promise<void> => {
             throw new Error('Failed to trim');
           }
 
-          await trim(path, trimmedPath, Math.max(0, start - 0.1), end);
+          await trim(path, trimmedPath, Math.max(0, start), end);
           const trimmedDuration = await getFileDuration(trimmedPath);
           logger.info(`Trimmed to ${trimmedDuration} ms`);
 
@@ -123,6 +132,7 @@ export const record = async (programme: Programme): Promise<void> => {
           }
 
           await renameWithSuffix(programme, FileType.TRIMMED, FileType.SUCCESSFUL);
+          trimmed = true;
 
           if (config.keepUntrimmed) {
             await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.RAW);
@@ -144,7 +154,8 @@ export const record = async (programme: Programme): Promise<void> => {
 
       await writeMetadata(programme, true, {
         start: recordingStart,
-        end: recordingEnd
+        end: recordingEnd,
+        trimmed
       });
 
       if (thumbnailData) {

@@ -135,9 +135,9 @@ const getFfmpegBoundaryDetectionArguments = (
         // Detect black frames with logo
         '[cvy0][by]blend=difference,blackframe=99',
         // Detect white frames with logo
-        '[cvy1][wy]blend=difference,blackframe=99',
-        // Detect white frames with logo
-        '[cvy2][wby]blend=difference,blackframe=99',
+        '[cvy1][wy]blend=difference,blackframe=99:50',
+        // Detect white frames with logo and border
+        '[cvy2][wby]blend=difference,blackframe=99:50',
         // Detect black frames with no logo
         '[cvy3]blackframe=99',
         // Detect Newsline intro

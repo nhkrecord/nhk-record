@@ -113,7 +113,7 @@ export const writeThumbnail = async (
 export const writeMetadata = async (
   programme: Programme,
   successful: boolean,
-  recording: { start: Date; end: Date }
+  recording: { start: Date; end: Date; trimmed?: boolean }
 ): Promise<string> => {
   const path = `${getSavePath(programme)}${getSuffix(
     successful ? FileType.SUCCESSFUL : FileType.FAILED,
@@ -132,6 +132,7 @@ export const writeMetadata = async (
       ...programme,
       recordDateStart: recording?.start?.toISOString(),
       recordDateEnd: recording?.end?.toISOString(),
+      trimmed: recording?.trimmed ?? false,
       sha256
     },
     null,
