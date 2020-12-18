@@ -141,6 +141,10 @@ export const record = async (programme: Programme): Promise<void> => {
 
           if (config.keepUntrimmed) {
             await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.RAW);
+            await writeMetadata(programme, FileType.RAW, {
+              start: recordingStart,
+              end: currDate()
+            });
           } else {
             await remove(path);
           }
@@ -157,7 +161,7 @@ export const record = async (programme: Programme): Promise<void> => {
         await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.SUCCESSFUL);
       }
 
-      await writeMetadata(programme, true, {
+      await writeMetadata(programme, FileType.SUCCESSFUL, {
         start: recordingStart,
         end: recordingEnd,
         trimmed
@@ -178,7 +182,7 @@ export const record = async (programme: Programme): Promise<void> => {
     }
 
     if (await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.FAILED)) {
-      await writeMetadata(programme, false, {
+      await writeMetadata(programme, FileType.FAILED, {
         start: recordingStart,
         end: currDate()
       });
