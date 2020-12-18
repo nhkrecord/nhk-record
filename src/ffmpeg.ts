@@ -113,7 +113,7 @@ const getFfmpegBoundaryDetectionArguments = (
   [
     '-copyts',
     ['-ss', `${from / 1000}`],
-    ['-t', `${limit / 1000}`],
+    limit ? ['-t', `${limit / 1000}`] : [],
     ['-i', path],
     ['-i', join(appRootPath.path, 'data/black_cropped.jpg')],
     ['-i', join(appRootPath.path, 'data/white_cropped.jpg')],
@@ -213,7 +213,7 @@ const findBoundariesCandidates = (
 export const detectPotentialBoundaries = async (
   path: string,
   from: number,
-  limit: number
+  limit?: number
 ): Promise<Array<BoundaryCandidate>> => {
   const args = getFfmpegBoundaryDetectionArguments(path, from, limit);
 

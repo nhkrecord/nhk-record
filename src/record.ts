@@ -17,7 +17,7 @@ import { currDate, now } from './utils';
 const START_BOUNDARY_SEARCH_DURATION = 45_000;
 const END_BOUNDARY_SEARCH_DURATION = 180_000;
 const START_BOUNDARY_SEARCH_BUFFER_DURATION = 10_000;
-const END_BOUNDARY_SEARCH_BUFFER_DURATION = 30_000;
+const END_BOUNDARY_SEARCH_BUFFER_DURATION = 40_000;
 const MINIMUM_PROGRAMME_DURATION = 30_000;
 const INTERSTITIAL_DURATION_DIVISOR = 30_000;
 const INTERSTITIAL_DURATION_TOLERANCE = 1_000;
@@ -60,6 +60,11 @@ export const findTrimParameters = async (
     endSearchTime,
     END_BOUNDARY_SEARCH_DURATION + END_BOUNDARY_SEARCH_BUFFER_DURATION + config.safetyBuffer
   );
+
+  if (!endBoundaryCandidates.length) {
+    logger.info('No end boundary detected');
+    return { start };
+  }
 
   const { start: lastCandidateStart } = last(endBoundaryCandidates);
   const filteredCandidates = endBoundaryCandidates
