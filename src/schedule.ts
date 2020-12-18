@@ -1,8 +1,8 @@
-import pick from 'lodash.pick';
 import fetch from 'node-fetch';
+import { pick } from 'ramda';
 import config from './config';
 import logger from './logger';
-import { currDate, now, parseDate } from './utils';
+import { now, parseDate } from './utils';
 
 const SCHEDULE_BEGIN_OFFSET = -2 * 60 * 60 * 1000;
 const SCHEDULE_END_OFFSET = 7 * 24 * 60 * 60 * 1000;
@@ -56,7 +56,7 @@ export const getSchedule = async (): Promise<Array<Programme>> => {
 
   if (items) {
     return items.map((item) => ({
-      ...pick(item, ['title', 'subtitle', 'seriesId', 'airingId', 'description', 'thumbnail']),
+      ...pick(['title', 'subtitle', 'seriesId', 'airingId', 'description', 'thumbnail'])(item),
       content: item.content_clean,
       startDate: parseDate(item.pubDate),
       endDate: parseDate(item.endDate)

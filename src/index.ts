@@ -1,6 +1,6 @@
 import micromatch from 'micromatch';
 import config from './config';
-import { record } from './ffmpeg';
+import { record } from './record';
 import logger from './logger';
 import { getCurrentProgramme } from './schedule';
 import { makeSaveDirectory, recordingExists } from './storage';
