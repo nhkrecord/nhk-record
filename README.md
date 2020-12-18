@@ -38,8 +38,8 @@ Options can be specified via the CLI or via a config file.
   -f, --log-file           Location of log file
                                       [string] [default: "/logs/nhk-record.log"]
   -i, --stream-url         URL from which to record stream
-  [string] [default: "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwli
-                                                       ve-ojp-en/index_4M.m3u8"]
+  [string] [default: "https://b-nhkwlive-ojp.webcdn.stream.ne.jp/hls/live/200345
+                                             9-b/nhkwlive-ojp-en/index_4M.m3u8"]
   -k, --log-level-console  Logging level to output to console
          [string] [choices: "debug", "info", "error", "none"] [default: "debug"]
   -K, --keep-untrimmed     If auto-trimming is enabled, also keep the original
@@ -55,6 +55,7 @@ Options can be specified via the CLI or via a config file.
   -t, --minimum-duration   Minimum programme run time to record in milliseconds
                                                       [number] [default: 240000]
   -T, --trim               Attempt to automatically trim video
+                                                       [boolean] [default: true]
 ```
 
 ### Config file
