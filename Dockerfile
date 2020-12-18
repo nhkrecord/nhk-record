@@ -16,6 +16,7 @@ RUN npm run build
 
 FROM base AS release
 COPY --from=dependencies /app/lib /app/lib
+COPY data /app/data
 COPY run.sh /app/
 COPY config.json /config.json
 RUN chmod +x run.sh
