@@ -69,14 +69,14 @@ The location of the config file can be specified with the `-c` option.
   "logFile": "/logs/nhk-record.log",
   "logLevelConsole": "debug",
   "logLevelFile": "debug",
-  "matchPattern": [ "*" ],
+  "matchPattern": ["*"],
   "minimumDuration": 240000,
   "safetyBuffer": 40000,
   "saveDir": "/recordings/",
   "scheduleUrl": "https://api.nhk.or.jp",
-  "streamUrl": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8",
-  "trim": true,
-  "timeOffset": 0
+  "streamUrl": "https://b-nhkwlive-ojp.webcdn.stream.ne.jp/hls/live/2003459-b/nhkwlive-ojp-en/index_4M.m3u8",
+  "timeOffset": 0,
+  "trim": true
 }
 ```
 
