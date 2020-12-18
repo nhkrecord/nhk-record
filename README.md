@@ -85,7 +85,7 @@ The location of the config file can be specified with the `-c` option.
 Match patterns use [micromatch](https://github.com/micromatch/micromatch). For example:
 | Description                  | Pattern                                      |
 |------------------------------|----------------------------------------------|
-| Match everything             | ["*"]                                        |
+| Match everything             | ["\*"]                                       |
 | Japanology and Lunch ON!     | ["\*japanology\*", "\*lunch\*"]              |
 | Everything except Newsline   | ["!(\*newsline\*\|\*nl bridge\*)"]           |
 
