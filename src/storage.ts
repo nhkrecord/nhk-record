@@ -112,13 +112,10 @@ export const writeThumbnail = async (
 
 export const writeMetadata = async (
   programme: Programme,
-  successful: boolean,
+  type: FileType,
   recording: { start: Date; end: Date; trimmed?: boolean }
 ): Promise<string> => {
-  const path = `${getSavePath(programme)}${getSuffix(
-    successful ? FileType.SUCCESSFUL : FileType.FAILED,
-    programme
-  )}`;
+  const path = `${getSavePath(programme)}${getSuffix(type, programme)}`;
   const metadataPath = `${path}${getSuffix(FileType.METADATA, programme)}`;
 
   logger.debug(`Hashing '${path}'`);
