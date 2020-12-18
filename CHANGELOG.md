@@ -1,3 +1,10 @@
+## [0.7.1](https://github.com/nhkrecord/nhk-record/compare/v0.7.0...v0.7.1) (2020-12-18)
+
+
+### Bug Fixes
+
+* add missing data dir to Dockerfile ([#26](https://github.com/nhkrecord/nhk-record/issues/26)) ([fe88a38](https://github.com/nhkrecord/nhk-record/commit/fe88a388ac342d014aed53cedd44a605a1a7e8eb))
+
 # [0.7.0](https://github.com/nhkrecord/nhk-record/compare/v0.6.0...v0.7.0) (2020-12-18)
 
 
