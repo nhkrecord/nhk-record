@@ -19,14 +19,14 @@ export const remove = (path: string): Promise<void> => unlink(path);
 
 const getSuffix = (suffixType: FileType, programme: Programme): string =>
   ({
-    FAILED: (programme: Programme) =>
+    [FileType.FAILED]: (programme: Programme) =>
       `.${sanitizeFilename(programme.startDate.toISOString())}.failed`,
-    IN_PROGRESS: () => '.inprogress',
-    METADATA: () => '.metadata',
-    RAW: () => '.raw',
-    SUCCESSFUL: () => '',
-    THUMBNAIL: () => '.jpg',
-    TRIMMED: () => '.trimmed'
+    [FileType.IN_PROGRESS]: () => '.inprogress',
+    [FileType.METADATA]: () => '.metadata',
+    [FileType.RAW]: () => '.raw',
+    [FileType.SUCCESSFUL]: () => '',
+    [FileType.THUMBNAIL]: () => '.jpg',
+    [FileType.TRIMMED]: () => '.trimmed'
   }[suffixType](programme));
 
 export const makeSaveDirectory = async (): Promise<string> => {
