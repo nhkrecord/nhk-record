@@ -1,3 +1,16 @@
+# [0.7.0](https://github.com/nhkrecord/nhk-record/compare/v0.6.0...v0.7.0) (2020-12-18)
+
+
+### Bug Fixes
+
+* fix suffix lookup ([#23](https://github.com/nhkrecord/nhk-record/issues/23)) ([dad41b1](https://github.com/nhkrecord/nhk-record/commit/dad41b10a5c21afd546ca0161dec1877d7109faf))
+
+
+### Features
+
+* automatic trimming ([#15](https://github.com/nhkrecord/nhk-record/issues/15)) ([2b8c58c](https://github.com/nhkrecord/nhk-record/commit/2b8c58c284c9876dff3fb241663ffc516340ee6e))
+* write metadata for raw ([#22](https://github.com/nhkrecord/nhk-record/issues/22)) ([3c4b15a](https://github.com/nhkrecord/nhk-record/commit/3c4b15af4fa787111d30478c6a7d2390837be34c))
+
 # [0.6.0](https://github.com/nhkrecord/nhk-record/compare/v0.5.2...v0.6.0) (2020-12-15)
 
 ### Features
