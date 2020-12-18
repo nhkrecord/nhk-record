@@ -1,8 +1,8 @@
-import pick from 'lodash.pick';
 import fetch from 'node-fetch';
+import { pick } from 'ramda';
 import config from './config';
 import logger from './logger';
-import { parseDate } from './utils';
+import { now, parseDate } from './utils';
 
 const SCHEDULE_BEGIN_OFFSET = -2 * 60 * 60 * 1000;
 const SCHEDULE_END_OFFSET = 7 * 24 * 60 * 60 * 1000;
@@ -48,15 +48,15 @@ export const getSchedule = async (): Promise<Array<Programme>> => {
     throw new Error('Unable to retrieve API key');
   }
 
-  const start = new Date(Date.now() + SCHEDULE_BEGIN_OFFSET);
-  const end = new Date(Date.now() + SCHEDULE_END_OFFSET);
+  const start = new Date(now() + SCHEDULE_BEGIN_OFFSET);
+  const end = new Date(now() + SCHEDULE_END_OFFSET);
 
   const rawSchedule = await getScheduleForPeriod(apiKey, start, end);
   const items = rawSchedule?.channel?.item;
 
   if (items) {
     return items.map((item) => ({
-      ...pick(item, ['title', 'subtitle', 'seriesId', 'airingId', 'description', 'thumbnail']),
+      ...pick(['title', 'subtitle', 'seriesId', 'airingId', 'description', 'thumbnail'])(item),
       content: item.content_clean,
       startDate: parseDate(item.pubDate),
       endDate: parseDate(item.endDate)
@@ -67,7 +67,7 @@ export const getSchedule = async (): Promise<Array<Programme>> => {
 };
 
 export const getScheduleMemoized = async (): Promise<Array<Programme>> => {
-  const cacheAge = Date.now() - scheduleDataTimestamp;
+  const cacheAge = now() - scheduleDataTimestamp;
   if (cacheAge < MAX_CACHE_AGE) {
     logger.debug(`Using cached schedule (${cacheAge / 1000} seconds old)`);
     return scheduleData;
@@ -76,7 +76,7 @@ export const getScheduleMemoized = async (): Promise<Array<Programme>> => {
   try {
     logger.debug('Retrieving schedule');
     scheduleData = await getSchedule();
-    scheduleDataTimestamp = Date.now();
+    scheduleDataTimestamp = now();
 
     return scheduleData;
   } catch (err) {
@@ -94,7 +94,7 @@ export const getScheduleMemoized = async (): Promise<Array<Programme>> => {
 
 export const getCurrentProgramme = async (): Promise<Programme> => {
   const programmes = await getScheduleMemoized();
-  const currTime = Date.now() + config.safetyBuffer;
+  const currTime = now() + config.safetyBuffer;
 
   const programme = programmes.find(
     ({ startDate, endDate }) => currTime > startDate.getTime() && currTime < endDate.getTime()

@@ -1,4 +1,4 @@
-type Programme = {
+interface Programme {
   title: string;
   subtitle: string;
   content: string;
@@ -8,4 +8,4 @@ type Programme = {
   startDate: Date;
   endDate: Date;
   thumbnail: string;
-};
+}
