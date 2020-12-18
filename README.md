@@ -82,11 +82,11 @@ The location of the config file can be specified with the `-c` option.
 ### Match pattern format
 
 Match patterns use [micromatch](https://github.com/micromatch/micromatch). For example:
-| Description | Pattern |
+| Description                  | Pattern                                      |
 |------------------------------|----------------------------------------------|
-| Match everything | `["*"]` |
-| Japanology and Lunch ON! | `["*japanology*", "*lunch*"]` |
-| Everything except Newsline | `["!(*newsline*\|*nl bridge*)"]` |
+| Match everything             | ["*"]                                        |
+| Japanology and Lunch ON!     | ["\*japanology\*", "\*lunch\*"]              |
+| Everything except Newsline   | ["!(\*newsline\*\|\*nl bridge\*)"]           |
 
 ## Running as a docker container
 
