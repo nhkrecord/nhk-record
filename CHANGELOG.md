@@ -1,3 +1,10 @@
+## [0.7.2](https://github.com/nhkrecord/nhk-record/compare/v0.7.1...v0.7.2) (2020-12-20)
+
+
+### Bug Fixes
+
+* ignore orphaned .inprogress files ([#29](https://github.com/nhkrecord/nhk-record/issues/29)) ([06481a4](https://github.com/nhkrecord/nhk-record/commit/06481a4658fe1aa4669dd878c69950ca6c36abd5)), closes [#28](https://github.com/nhkrecord/nhk-record/issues/28)
+
 ## [0.7.1](https://github.com/nhkrecord/nhk-record/compare/v0.7.0...v0.7.1) (2020-12-18)
 
 
