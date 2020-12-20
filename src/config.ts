@@ -47,7 +47,7 @@ const config = yargs(process.argv.slice(2))
   .option('k', {
     alias: 'log-level-console',
     describe: 'Logging level to output to console',
-    choices: ['debug', 'info', 'error', 'none'],
+    choices: ['debug', 'info', 'error', 'none', 'silly'],
     type: 'string',
     default: defaultConfig.logLevelConsole
   })

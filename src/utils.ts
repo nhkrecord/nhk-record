@@ -3,6 +3,7 @@ import readline from 'readline';
 import config from './config';
 import { ExecError } from './error';
 import { Readable } from 'stream';
+import logger from './logger';
 
 export const sleep = async (sleepMillis: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, sleepMillis));
@@ -27,8 +28,15 @@ export const execute = (
       stdin.pipe(proc.stdin);
     }
 
-    readline.createInterface({ input: proc.stdout }).on('line', (l) => stdout.push(l));
-    readline.createInterface({ input: proc.stderr }).on('line', (l) => stderr.push(l));
+    readline.createInterface({ input: proc.stdout }).on('line', (l) => {
+      logger.silly(l);
+      stdout.push(l);
+    });
+
+    readline.createInterface({ input: proc.stderr }).on('line', (l) => {
+      logger.silly(l);
+      stderr.push(l);
+    });
 
     proc.on('exit', (code) => {
       if (code !== 0) {

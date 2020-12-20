@@ -2,7 +2,7 @@ import appRootPath from 'app-root-path';
 import compareFunc from 'compare-func';
 import IntervalTree from 'node-interval-tree';
 import { join } from 'path';
-import { head, last } from 'ramda';
+import { init, head, last } from 'ramda';
 import { Readable } from 'stream';
 import config from './config';
 import logger from './logger';
@@ -31,6 +31,27 @@ const SILENCEDETECT_FILTER_OUTPUT_PATTERN = new RegExp(
     .map((r) => r.source)
     .join(' ')
 );
+
+const CROPDETECT_FILTER_OUTPUT_PATTERN = new RegExp(
+  [
+    /\[Parsed_cropdetect_(?<filterNum>\d+) @ \w+\]/,
+    /x1:(?<x1>\d+)/,
+    /x2:(?<x2>\d+)/,
+    /y1:(?<y1>\d+)/,
+    /y2:(?<y2>\d+)/,
+    /w:(?<width>\d+)/,
+    /h:(?<height>\d+)/,
+    /x:(?<x>\d+)/,
+    /y:(?<y>\d+)/,
+    /pts:\d+/,
+    /t:(?<time>[\d.]+)/,
+    /crop=\d+:\d+:\d+:\d+/
+  ]
+    .map((r) => r.source)
+    .join(' ')
+);
+
+const FULL_CROP_WIDTH = 1920;
 
 interface FrameSearchStrategy {
   name: string;
@@ -90,7 +111,7 @@ const NEWS_BANNER_STRATEGY = {
   name: 'news-banner-background',
   filters: [13],
   maxSkip: 120,
-  minFrames: 60
+  minFrames: 120
 } as FrameSearchStrategy;
 
 const getFfprobeArguments = (path: string): Array<string> =>
@@ -225,7 +246,6 @@ export const detectPotentialBoundaries = async (
 
   const ffmpegStartTime = process.hrtime.bigint();
   const { stderr: outputLines } = await execute('ffmpeg', args);
-  outputLines.forEach(logger.debug);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 
@@ -289,12 +309,53 @@ export const detectNewsBanners = async (path: string): Promise<Array<DetectedFea
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
   const ffmpegStartTime = process.hrtime.bigint();
   const { stderr: outputLines } = await execute('ffmpeg', args);
-  outputLines.forEach(logger.silly);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 
   const newsBanners = findBlackframeGroups(outputLines, NEWS_BANNER_STRATEGY);
   return newsBanners;
+};
+
+const getFfmpegCropDetectionArguments = (path: string, from: number, limit: number) =>
+  [
+    '-copyts',
+    ['-ss', `${from / 1000}`],
+    ['-t', `${limit / 1000}`],
+    ['-i', path],
+    ['-i', join(appRootPath.path, 'data/news_background.jpg')],
+    [
+      '-filter_complex',
+      [
+        // Extract luma channels
+        '[0:0]extractplanes=y[vy]',
+        '[1]extractplanes=y[iy]',
+        // Find difference with news background
+        '[vy][iy]blend=difference,crop=1920:928:0:60,split=2[vc0][vc1]',
+        // Mirror content to get symmetrical crop
+        '[vc0]hflip[vf]',
+        '[vf][vc1]blend=addition,cropdetect=16:2:1'
+      ].join(';')
+    ],
+    ['-f', 'null'],
+    '-'
+  ].flat();
+
+export const detectCropArea = async (path: string, from: number, limit: number) => {
+  const args = getFfmpegCropDetectionArguments(path, from, limit);
+
+  logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
+  const ffmpegStartTime = process.hrtime.bigint();
+  const { stderr: outputLines } = await execute('ffmpeg', args);
+  const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
+  logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
+
+  return outputLines
+    .map((line) => line.match(CROPDETECT_FILTER_OUTPUT_PATTERN))
+    .filter((x) => x)
+    .map(({ groups: { width, time } }) => ({
+      time: parseFloat(time) * 1000,
+      width: parseInt(width)
+    }));
 };
 
 const getFfmpegCaptureArguments = (
@@ -340,43 +401,88 @@ export const captureStream = async (
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
   const ffmpegStartTime = process.hrtime.bigint();
   const { stderr: outputLines } = await execute('ffmpeg', args, thumbnailStream);
-  outputLines.forEach(logger.debug);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 
   return outputLines;
 };
 
+export const generateTimeSequence = (
+  calcValue: (w: number) => number,
+  cropParameters: Array<CropParameters>
+) => {
+  const { time, width = FULL_CROP_WIDTH } = last(cropParameters) ?? {};
+  if (!time) {
+    return `${calcValue(width)}`;
+  }
+
+  return `if(gte(t,${time / 1000}),${calcValue(width)},${generateTimeSequence(
+    calcValue,
+    init(cropParameters)
+  )})`;
+};
+
 const getFfmpegTrimArguments = (
   inputPath: string,
   outputPath: string,
   start: number,
-  end: number
+  end: number,
+  cropParameters: Array<CropParameters>
 ): Array<string> =>
   [
     '-y',
+    '-copyts',
     ['-i', inputPath],
     ['-ss', `${start / 1000}`],
     end ? ['-to', `${end / 1000}`] : [],
-    ['-map', '0'],
     ['-map_metadata', '0'],
-    ['-codec', 'copy'],
+    [
+      '-filter_complex',
+      [
+        cropParameters.length >= 0
+          ? [
+              'nullsrc=size=1920x1080[base]',
+              `[base][0:0]overlay='${generateTimeSequence(
+                (v) => Math.floor((v - FULL_CROP_WIDTH) / 2),
+                cropParameters
+              )}':0:shortest=1[o]`,
+              `[o]scale='${generateTimeSequence(
+                (v) => Math.floor((FULL_CROP_WIDTH * FULL_CROP_WIDTH) / v),
+                cropParameters
+              )}':-1:eval=frame:flags=bicubic[s]`
+            ]
+          : [],
+        '[s]setpts=PTS-STARTPTS[v]'
+      ]
+        .flat()
+        .join(';')
+    ],
+    cropParameters.length >= 0
+      ? [
+          ['-acodec', 'copy'],
+          ['-vcodec', 'libx264'],
+          ['-crf', '20']
+        ]
+      : [['-codec', 'copy']],
+    ['-map', '[v]'],
+    ['-map', '0:1'],
+    ['-map', '0:2?'],
     ['-f', 'mp4'],
     outputPath
-  ].flat();
+  ].flat(2);
 
-export const trim = async (
+export const postProcessRecording = async (
   inputPath: string,
   outputPath: string,
   start: number,
-  end: number
+  end: number,
+  cropParameters: Array<CropParameters>
 ): Promise<void> => {
-  const args = getFfmpegTrimArguments(inputPath, outputPath, start, end);
+  const args = getFfmpegTrimArguments(inputPath, outputPath, start, end, cropParameters);
 
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
   const ffmpegStartTime = process.hrtime.bigint();
-  const { stderr: outputLines } = await execute('ffmpeg', args);
-  outputLines.forEach(logger.debug);
+  await execute('ffmpeg', args);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 };
