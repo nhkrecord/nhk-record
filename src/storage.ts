@@ -5,6 +5,8 @@ import sanitizeFilename from 'sanitize-filename';
 import config from './config';
 import logger from './logger';
 
+const MAX_IN_PROGRESS_AGE = 3 * 60 * 60 * 1000;
+
 export enum FileType {
   FAILED,
   IN_PROGRESS,
@@ -67,7 +69,9 @@ export const getTrimmedPath = (programme: Programme): string =>
 export const recordingExists = async (programme: Programme): Promise<boolean> =>
   (
     await Promise.all([
-      stat(getInProgressPath(programme)).catch(() => null),
+      stat(getInProgressPath(programme))
+        .then((s) => Date.now() - s.mtimeMs < MAX_IN_PROGRESS_AGE)
+        .catch(() => null),
       stat(getSavePath(programme)).catch(() => null)
     ])
   ).some((s) => !!s);
