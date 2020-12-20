@@ -107,12 +107,11 @@ export const record = async (programme: Programme): Promise<void> => {
   const recordingStart = currDate();
   try {
     const thumbnailData = await getThumbnail(programme.thumbnail);
-    const streamCaptureOutput = await captureStream(path, targetSeconds, programme, thumbnailData);
+    await captureStream(path, targetSeconds, programme, thumbnailData);
 
     const recordingEnd = currDate();
 
     logger.info(`Finished recording: ${path}`);
-    logger.debug(streamCaptureOutput);
 
     const expectedDuration = programme.endDate.getTime() - programme.startDate.getTime();
     const actualDuration = await getFileDuration(path);

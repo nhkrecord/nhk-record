@@ -3,8 +3,8 @@ import defaultConfig from '../config.json';
 
 type inferredConfigType = typeof defaultConfig;
 interface Config extends inferredConfigType {
-  logLevelConsole: 'debug' | 'info' | 'error' | 'none';
-  logLevelFile: 'debug' | 'info' | 'error' | 'none';
+  logLevelConsole: 'debug' | 'info' | 'error' | 'none' | 'silly';
+  logLevelFile: 'debug' | 'info' | 'error' | 'none' | 'silly';
 }
 
 const config = yargs(process.argv.slice(2))

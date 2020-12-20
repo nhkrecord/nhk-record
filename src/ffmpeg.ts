@@ -1,14 +1,12 @@
 import appRootPath from 'app-root-path';
-import { execFile } from 'child_process';
 import compareFunc from 'compare-func';
 import IntervalTree from 'node-interval-tree';
 import { join } from 'path';
 import { head, last } from 'ramda';
-import streamToPromise from 'stream-to-promise';
-import { promisify } from 'util';
+import { Readable } from 'stream';
 import config from './config';
-import { ExecError } from './error';
 import logger from './logger';
+import { execute } from './utils';
 
 const BLACKFRAME_FILTER_OUTPUT_PATTERN = new RegExp(
   [
@@ -34,10 +32,11 @@ const SILENCEDETECT_FILTER_OUTPUT_PATTERN = new RegExp(
     .join(' ')
 );
 
-interface Strategy {
+interface FrameSearchStrategy {
   name: string;
   filters: Array<number>;
-  minSilenceSeconds: number;
+  maxSkip?: number;
+  minSilenceSeconds?: number;
   minFrames: number;
 }
 
@@ -54,7 +53,7 @@ interface BlackframeOutput {
 
 const MINIMUM_BOUNDARY_SILENCE_SECONDS = 0.1;
 
-const STRATEGIES = [
+const BOUNDARY_STRATEGIES = [
   {
     name: 'black-logo',
     filters: [9],
@@ -85,9 +84,14 @@ const STRATEGIES = [
     minSilenceSeconds: 0,
     minFrames: 1
   }
-] as Array<Strategy>;
+] as Array<FrameSearchStrategy>;
 
-const execFileAsync = promisify(execFile);
+const NEWS_BANNER_STRATEGY = {
+  name: 'news-banner-background',
+  filters: [13],
+  maxSkip: 120,
+  minFrames: 60
+} as FrameSearchStrategy;
 
 const getFfprobeArguments = (path: string): Array<string> =>
   [['-v', 'quiet'], ['-print_format', 'json'], '-show_format', path].flat();
@@ -97,10 +101,10 @@ export const getFileDuration = async (path: string): Promise<number> => {
 
   logger.debug(`Invoking ffprobe with args: ${args.join(' ')}`);
 
-  const { stdout } = await execFileAsync('ffprobe', args);
+  const { stdout } = await execute('ffprobe', args);
   const {
     format: { duration }
-  } = JSON.parse(stdout);
+  } = JSON.parse(stdout.join(''));
 
   return parseFloat(duration) * 1_000;
 };
@@ -159,13 +163,11 @@ const findSilences = (ffmpegLines: Array<string>): Array<Silence> =>
       endTime: Math.round(parseFloat(endTime) * 1000)
     }));
 
-const findBoundariesCandidates = (
+const findBlackframeGroups = (
   ffmpegLines: Array<string>,
-  candidateWindows: IntervalTree<number>,
-  blackframeFilters: Array<number>,
-  mininimumSilenceDuration: number,
-  minimumConsecutiveFrames: number
-): Array<BoundaryCandidate> =>
+  strategy: FrameSearchStrategy,
+  candidateWindows: IntervalTree<number> = new IntervalTree<number>()
+): Array<DetectedFeature> =>
   ffmpegLines
     .map((line) => line.match(BLACKFRAME_FILTER_OUTPUT_PATTERN))
     .filter((x) => x)
@@ -177,9 +179,10 @@ const findBoundariesCandidates = (
           time: Math.round(parseFloat(time) * 1000)
         } as BlackframeOutput)
     )
-    .filter(({ filterNum }) => blackframeFilters.includes(filterNum))
+    .filter(({ filterNum }) => strategy.filters.includes(filterNum))
     .filter(
-      ({ time }) => head(candidateWindows.search(time, time)) ?? 0 >= mininimumSilenceDuration
+      ({ time }) =>
+        head(candidateWindows.search(time, time)) ?? 0 >= (strategy.minSilenceSeconds ?? 0)
     )
     .sort(compareFunc(['filterNum', 'frame']))
     .reduce((frameGroups, frame) => {
@@ -191,7 +194,8 @@ const findBoundariesCandidates = (
       const lastFrame = last(frameGroup);
       if (
         !lastFrame ||
-        (frame.frameNum - lastFrame.frameNum === 1 && frame.filterNum === lastFrame.filterNum)
+        (frame.frameNum - lastFrame.frameNum <= (strategy.maxSkip ?? 1) &&
+          frame.filterNum === lastFrame.filterNum)
       ) {
         frameGroup.push(frame);
       } else {
@@ -199,7 +203,7 @@ const findBoundariesCandidates = (
       }
       return frameGroups;
     }, [] as Array<Array<BlackframeOutput>>)
-    .filter((frameGroup) => frameGroup.length >= minimumConsecutiveFrames)
+    .filter((frameGroup) => frameGroup.length >= strategy.minFrames)
     .map(
       (frameGroup) =>
         ({
@@ -207,25 +211,24 @@ const findBoundariesCandidates = (
           end: last(frameGroup).time,
           firstFrame: head(frameGroup).frameNum,
           lastFrame: last(frameGroup).frameNum
-        } as BoundaryCandidate)
+        } as DetectedFeature)
     );
 
 export const detectPotentialBoundaries = async (
   path: string,
   from: number,
   limit?: number
-): Promise<Array<BoundaryCandidate>> => {
+): Promise<Array<DetectedFeature>> => {
   const args = getFfmpegBoundaryDetectionArguments(path, from, limit);
 
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
 
   const ffmpegStartTime = process.hrtime.bigint();
-  const { stderr } = await execFileAsync('ffmpeg', args);
-  logger.debug(stderr);
+  const { stderr: outputLines } = await execute('ffmpeg', args);
+  outputLines.forEach(logger.debug);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 
-  const outputLines = stderr.split('\n');
   const silences = findSilences(outputLines);
   logger.debug(`Found ${silences.length} silences`, silences);
 
@@ -239,15 +242,9 @@ export const detectPotentialBoundaries = async (
     return tree;
   }, new IntervalTree<number>());
 
-  for (const strategy of STRATEGIES) {
+  for (const strategy of BOUNDARY_STRATEGIES) {
     logger.debug(`Searching for candidates using ${strategy.name} strategy`);
-    const candidates = findBoundariesCandidates(
-      outputLines,
-      candidateWindows,
-      strategy.filters,
-      strategy.minSilenceSeconds,
-      strategy.minFrames
-    );
+    const candidates = findBlackframeGroups(outputLines, strategy, candidateWindows);
     logger.debug(`Found ${candidates.length} boundary candidates`, candidates);
     if (candidates.length > 0) {
       return candidates;
@@ -255,6 +252,49 @@ export const detectPotentialBoundaries = async (
   }
 
   return [];
+};
+
+const getFfmpegNewsBannerDetectionArguments = (path: string): Array<string> =>
+  [
+    ['-i', path],
+    ['-i', join(appRootPath.path, 'data/news_background.jpg')],
+    [
+      '-filter_complex',
+      [
+        'nullsrc=size=184x800[base]',
+        // Extract luma channels
+        '[0:0]extractplanes=y[vy]',
+        '[1]extractplanes=y[iy]',
+        '[vy]split=2[vy0][vy1]',
+        '[iy]split=2[iy0][iy1]',
+        // Crop left and right margin areas
+        '[vy0]crop=92:800:0:174[vyl]',
+        '[vy1]crop=92:800:1828:174[vyr]',
+        '[iy0]crop=92:800:0:174[iyl]',
+        '[iy1]crop=92:800:1828:174[iyr]',
+        // Compare left and right margins with news banner background
+        '[vyl][iyl]blend=difference[dl]',
+        '[vyr][iyr]blend=difference[dr]',
+        '[base][dl]overlay=0:0:shortest=1[ol]',
+        '[ol][dr]overlay=92:0,blackframe=99:16'
+      ].join(';')
+    ],
+    ['-f', 'null'],
+    '-'
+  ].flat();
+
+export const detectNewsBanners = async (path: string): Promise<Array<DetectedFeature>> => {
+  const args = getFfmpegNewsBannerDetectionArguments(path);
+
+  logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
+  const ffmpegStartTime = process.hrtime.bigint();
+  const { stderr: outputLines } = await execute('ffmpeg', args);
+  outputLines.forEach(logger.silly);
+  const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
+  logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
+
+  const newsBanners = findBlackframeGroups(outputLines, NEWS_BANNER_STRATEGY);
+  return newsBanners;
 };
 
 const getFfmpegCaptureArguments = (
@@ -292,30 +332,19 @@ export const captureStream = async (
   targetSeconds: number,
   programme: Programme,
   thumbnailData: Buffer | null
-): Promise<string> => {
-  const ffmpegArgs = getFfmpegCaptureArguments(path, programme, !!thumbnailData, targetSeconds);
+): Promise<Array<string>> => {
+  const args = getFfmpegCaptureArguments(path, programme, !!thumbnailData, targetSeconds);
 
-  logger.debug(`Invoking ffmpeg with args: ${ffmpegArgs.join(' ')}`);
-  const proc = execFile('ffmpeg', ffmpegArgs);
-  const { stdout, stderr, stdin } = proc;
-  if (thumbnailData) {
-    stdin.write(thumbnailData);
-    stdin.end();
-  }
+  const thumbnailStream = thumbnailData ? Readable.from(thumbnailData) : null;
 
-  const [stdoutContent, stderrContent] = (
-    await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
-  ).map((b) => b.toString('utf-8'));
+  logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
+  const ffmpegStartTime = process.hrtime.bigint();
+  const { stderr: outputLines } = await execute('ffmpeg', args, thumbnailStream);
+  outputLines.forEach(logger.debug);
+  const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
+  logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 
-  return new Promise((resolve, reject) => {
-    proc.on('exit', (code) => {
-      if (code !== 0) {
-        return reject(new ExecError(`Non-zero exit code: ${code}`, stdoutContent, stderrContent));
-      }
-
-      resolve(stderrContent);
-    });
-  });
+  return outputLines;
 };
 
 const getFfmpegTrimArguments = (
@@ -345,24 +374,9 @@ export const trim = async (
   const args = getFfmpegTrimArguments(inputPath, outputPath, start, end);
 
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
-
   const ffmpegStartTime = process.hrtime.bigint();
-  const proc = execFile('ffmpeg', args);
-  const { stdout, stderr } = proc;
-  const [stdoutContent, stderrContent] = (
-    await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
-  ).map((b) => b.toString('utf-8'));
-
-  const output = await new Promise((resolve, reject) => {
-    proc.on('exit', (code) => {
-      if (code !== 0) {
-        return reject(new ExecError(`Non-zero exit code: ${code}`, stdoutContent, stderrContent));
-      }
-
-      resolve(stderrContent);
-    });
-  });
-  logger.debug(output);
+  const { stderr: outputLines } = await execute('ffmpeg', args);
+  outputLines.forEach(logger.debug);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 };
