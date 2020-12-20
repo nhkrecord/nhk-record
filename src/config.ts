@@ -52,10 +52,10 @@ const config = yargs(process.argv.slice(2))
     default: defaultConfig.logLevelConsole
   })
   .option('K', {
-    alias: 'keep-untrimmed',
-    describe: 'If auto-trimming is enabled, also keep the original untrimmed copy',
+    alias: ['keep-original', 'keep-untrimmed'],
+    describe: 'If any post-processing options are enabled, also keep the original copy',
     type: 'boolean',
-    default: defaultConfig.keepUntrimmed
+    default: defaultConfig.keepOriginal
   })
   .option('l', {
     alias: 'log-level-file',

@@ -1,6 +1,7 @@
 {
   "assetsUrl": "https://www3.nhk.or.jp",
-  "keepUntrimmed": true,
+  "crop": true,
+  "keepOriginal": true,
   "logFile": "/logs/nhk-record.log",
   "logLevelConsole": "debug",
   "logLevelFile": "debug",

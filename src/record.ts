@@ -1,11 +1,11 @@
-import { head, last } from 'ramda';
+import { head, last, pick } from 'ramda';
 import config from './config';
 import { captureStream, detectPotentialBoundaries, getFileDuration, trim } from './ffmpeg';
 import logger from './logger';
 import {
   FileType,
   getInProgressPath,
-  getTrimmedPath,
+  getPostProcessedPath,
   remove,
   renameWithSuffix,
   writeMetadata,
@@ -90,12 +90,62 @@ export const findTrimParameters = async (
   );
 
   const end = head(filteredCandidates)?.start;
-  if (end) {
-    logger.info(`Detected end at ${end} ms`);
-  } else {
+  if (!end) {
     logger.info('No end boundary found');
+    return { start };
   }
+
+  logger.info(`Detected end at ${end} ms`);
   return { start, end };
+};
+
+export const postProcess = async (path: string, duration: number, programme: Programme) => {
+  const result = {
+    trimmed: false,
+    cropped: false,
+    keptOriginal: false
+  };
+
+  if (!config.trim && !config.crop) {
+    await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.SUCCESSFUL);
+    return result;
+  }
+
+  const trimmedPath = getPostProcessedPath(programme);
+  try {
+    const { start = 0, end = duration } = config.trim
+      ? await findTrimParameters(path, duration)
+      : {};
+
+    await trim(path, trimmedPath, Math.max(0, start), end);
+    const postProcessedDuration = await getFileDuration(trimmedPath);
+    logger.info(`Post-processed file is ${postProcessedDuration} ms`);
+
+    if (postProcessedDuration < MINIMUM_PROGRAMME_DURATION) {
+      throw new Error('Post-processed file is too short, something went wrong');
+    }
+
+    await renameWithSuffix(programme, FileType.POST_PROCESSED, FileType.SUCCESSFUL);
+
+    if (config.keepOriginal) {
+      await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.RAW);
+      result.keptOriginal = true;
+    } else {
+      await remove(path);
+    }
+
+    result.trimmed = true;
+  } catch (err) {
+    logger.error(err);
+    try {
+      await remove(trimmedPath);
+    } catch (err) {
+      logger.debug(err);
+    }
+    await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.SUCCESSFUL);
+  }
+
+  return result;
 };
 
 export const record = async (programme: Programme): Promise<void> => {
@@ -118,52 +168,21 @@ export const record = async (programme: Programme): Promise<void> => {
     logger.debug(`'${path}' duration is ${actualDuration} ms`);
 
     if (actualDuration - expectedDuration > 0) {
-      let trimmed = false;
-      if (config.trim) {
-        const trimmedPath = getTrimmedPath(programme);
-        try {
-          const { start, end } = await findTrimParameters(path, actualDuration);
-          if (!start) {
-            throw new Error('Failed to trim');
-          }
+      const postprocessingResult = await postProcess(path, actualDuration, programme);
 
-          await trim(path, trimmedPath, Math.max(0, start), end);
-          const trimmedDuration = await getFileDuration(trimmedPath);
-          logger.info(`Trimmed to ${trimmedDuration} ms`);
-
-          if (trimmedDuration < MINIMUM_PROGRAMME_DURATION) {
-            throw new Error('Trimmed file is too short, something went wrong');
-          }
-
-          await renameWithSuffix(programme, FileType.TRIMMED, FileType.SUCCESSFUL);
-          trimmed = true;
-
-          if (config.keepUntrimmed) {
-            await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.RAW);
-            await writeMetadata(programme, FileType.RAW, {
-              start: recordingStart,
-              end: currDate()
-            });
-          } else {
-            await remove(path);
-          }
-        } catch (err) {
-          logger.error(err);
-          try {
-            await remove(trimmedPath);
-          } catch (err) {
-            logger.debug(err);
-          }
-          await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.SUCCESSFUL);
-        }
-      } else {
-        await renameWithSuffix(programme, FileType.IN_PROGRESS, FileType.SUCCESSFUL);
+      if (postprocessingResult.keptOriginal) {
+        await writeMetadata(programme, FileType.RAW, {
+          start: recordingStart,
+          end: currDate(),
+          trimmed: false,
+          cropped: false
+        });
       }
 
       await writeMetadata(programme, FileType.SUCCESSFUL, {
         start: recordingStart,
         end: recordingEnd,
-        trimmed
+        ...pick(['trimmed', 'cropped'])(postprocessingResult)
       });
 
       if (thumbnailData) {
