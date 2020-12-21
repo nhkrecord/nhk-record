@@ -296,7 +296,7 @@ const getFfmpegNewsBannerDetectionArguments = (path: string): Array<string> =>
     [
       '-filter_complex',
       [
-        'nullsrc=size=184x800[base]',
+        'nullsrc=size=184x800:r=29.97[base]',
         // Extract luma channels
         '[0:0]extractplanes=y[vy]',
         '[1]extractplanes=y[iy]',
@@ -465,7 +465,7 @@ const getFfmpegTrimArguments = (
           [
             '-filter_complex',
             [
-              'nullsrc=size=1920x1080[base]',
+              'nullsrc=size=1920x1080:r=29.97[base]',
               `[base][0:0]overlay='${generateTimeSequence(
                 calculateOverlayPosition,
                 cropParameters

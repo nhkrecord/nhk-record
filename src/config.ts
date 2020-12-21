@@ -28,8 +28,10 @@ const config = yargs(process.argv.slice(2))
   })
   .option('C', {
     alias: 'crop',
-    describe:
-      'Attempt to automatically detect and crop out breaking news banners (requires re-encoding)',
+    describe: [
+      'Attempt to automatically detect and crop out breaking news banners',
+      '(requires re-encoding) (this uses a lot of memory)'
+    ].join(' '),
     type: 'boolean',
     default: defaultConfig.crop
   })
