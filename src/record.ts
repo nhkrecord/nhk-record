@@ -209,7 +209,8 @@ export const postProcess = async (path: string, duration: number, programme: Pro
       await remove(path);
     }
 
-    result.trimmed = true;
+    result.trimmed = start > 0;
+    result.cropped = cropParameters.length > 0;
   } catch (err) {
     logger.error(err);
     try {

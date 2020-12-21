@@ -130,6 +130,19 @@ export const getFileDuration = async (path: string): Promise<number> => {
   return parseFloat(duration) * 1_000;
 };
 
+export const getStreamCount = async (path: string): Promise<number> => {
+  const args = getFfprobeArguments(path);
+
+  logger.debug(`Invoking ffprobe with args: ${args.join(' ')}`);
+
+  const { stdout } = await execute('ffprobe', args);
+  const {
+    format: { nb_streams: numStreams }
+  } = JSON.parse(stdout.join(''));
+
+  return parseInt(numStreams);
+};
+
 const getFfmpegBoundaryDetectionArguments = (
   path: string,
   from: number,
@@ -437,7 +450,8 @@ const getFfmpegTrimArguments = (
   outputPath: string,
   start: number,
   end: number,
-  cropParameters: Array<CropParameters>
+  cropParameters: Array<CropParameters>,
+  hasThumbnail: boolean
 ): Array<string> =>
   [
     '-y',
@@ -448,7 +462,6 @@ const getFfmpegTrimArguments = (
     ['-codec', 'copy'],
     cropParameters.length > 0
       ? [
-          '-copyts',
           [
             '-filter_complex',
             [
@@ -461,18 +474,23 @@ const getFfmpegTrimArguments = (
                 calculateScaleWidth,
                 cropParameters
               )}':-1:eval=frame:flags=bicubic[s]`,
-              '[s]crop=1920:1080:0:0[c]',
-              '[c]setpts=PTS-STARTPTS[v]'
+              '[s]crop=1920:1080:0:0[c]'
             ].join(';')
           ],
-          ['-map', '[v]'],
+          ['-map', '[c]'],
           ['-crf', '19'],
           ['-preset', 'veryfast'],
           ['-codec:v:0', 'libx264']
         ]
       : ['-map', '0:0'],
     ['-map', '0:1'],
-    ['-map', '0:2?'],
+    hasThumbnail
+      ? [
+          ['-filter_complex', `[0:2]setpts=PTS+${start / 1000}/TB[tn]`],
+          ['-map', '[tn]'],
+          ['-codec:v:1', 'mjpeg']
+        ]
+      : [],
     ['-map_metadata', '0'],
     ['-f', 'mp4'],
     outputPath
@@ -485,7 +503,15 @@ export const postProcessRecording = async (
   end: number,
   cropParameters: Array<CropParameters>
 ): Promise<void> => {
-  const args = getFfmpegTrimArguments(inputPath, outputPath, start, end, cropParameters);
+  const hasThumbnail = (await getStreamCount(inputPath)) > 2;
+  const args = getFfmpegTrimArguments(
+    inputPath,
+    outputPath,
+    start,
+    end,
+    cropParameters,
+    hasThumbnail
+  );
 
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
   const ffmpegStartTime = process.hrtime.bigint();
