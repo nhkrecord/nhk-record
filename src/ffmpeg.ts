@@ -468,7 +468,9 @@ const getFfmpegTrimArguments = (
     ['-map', '0:1'],
     ['-map', '0:2?'],
     ['-codec', 'copy'],
-    cropParameters.length > 0 ? ['-copyts', ['-crf', '20'], ['-codec:v:0', 'libx264']] : [],
+    cropParameters.length > 0
+      ? ['-copyts', ['-crf', '20'], ['-preset', 'veryfast'], ['-codec:v:0', 'libx264']]
+      : [],
     ['-f', 'mp4'],
     outputPath
   ].flat(2);
