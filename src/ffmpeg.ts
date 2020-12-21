@@ -445,32 +445,35 @@ const getFfmpegTrimArguments = (
     ['-i', inputPath],
     ['-ss', `${start / 1000}`],
     end ? ['-to', `${end / 1000}`] : [],
-    ['-map_metadata', '0'],
-    cropParameters.length > 0
-      ? [
-          '-filter_complex',
-          [
-            'nullsrc=size=1920x1080[base]',
-            `[base][0:0]overlay='${generateTimeSequence(
-              calculateOverlayPosition,
-              cropParameters
-            )}':0:shortest=1[o]`,
-            `[o]scale='${generateTimeSequence(
-              calculateScaleWidth,
-              cropParameters
-            )}':-1:eval=frame:flags=bicubic[s]`,
-            '[s]crop=1920:1080:0:0[c]',
-            '[c]setpts=PTS-STARTPTS[v]'
-          ].join(';')
-        ]
-      : [],
-    ['-map', cropParameters.length > 0 ? '[v]' : '0:0'],
-    ['-map', '0:1'],
-    ['-map', '0:2?'],
     ['-codec', 'copy'],
     cropParameters.length > 0
-      ? ['-copyts', ['-crf', '20'], ['-preset', 'veryfast'], ['-codec:v:0', 'libx264']]
-      : [],
+      ? [
+          '-copyts',
+          [
+            '-filter_complex',
+            [
+              'nullsrc=size=1920x1080[base]',
+              `[base][0:0]overlay='${generateTimeSequence(
+                calculateOverlayPosition,
+                cropParameters
+              )}':0:shortest=1[o]`,
+              `[o]scale='${generateTimeSequence(
+                calculateScaleWidth,
+                cropParameters
+              )}':-1:eval=frame:flags=bicubic[s]`,
+              '[s]crop=1920:1080:0:0[c]',
+              '[c]setpts=PTS-STARTPTS[v]'
+            ].join(';')
+          ],
+          ['-map', '[v]'],
+          ['-crf', '19'],
+          ['-preset', 'veryfast'],
+          ['-codec:v:0', 'libx264']
+        ]
+      : ['-map', '0:0'],
+    ['-map', '0:1'],
+    ['-map', '0:2?'],
+    ['-map_metadata', '0'],
     ['-f', 'mp4'],
     outputPath
   ].flat(2);
