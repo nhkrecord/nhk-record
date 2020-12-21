@@ -37,7 +37,8 @@ Options can be specified via the CLI or via a config file.
   -C, --crop                             Attempt to automatically detect and
                                          crop out breaking news banners
                                          (requires re-encoding) (this uses a lot
-                                         of memory)    [boolean] [default: true]
+                                         of CPU & memory)
+                                                       [boolean] [default: true]
   -d, --save-dir                         Directory in which to save recorded
                                          programmes
                                               [string] [default: "/recordings/"]
