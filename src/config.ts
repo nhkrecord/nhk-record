@@ -26,6 +26,13 @@ const config = yargs(process.argv.slice(2))
     config: true,
     type: 'string'
   })
+  .option('C', {
+    alias: 'crop',
+    describe:
+      'Attempt to automatically detect and crop out breaking news banners (requires re-encoding)',
+    type: 'boolean',
+    default: defaultConfig.crop
+  })
   .option('d', {
     alias: 'save-dir',
     describe: 'Directory in which to save recorded programmes',
@@ -43,6 +50,12 @@ const config = yargs(process.argv.slice(2))
     describe: 'URL from which to record stream',
     type: 'string',
     default: defaultConfig.streamUrl
+  })
+  .option('j', {
+    alias: 'thread-limit',
+    describe: 'Maximum threads to use for video processing',
+    type: 'number',
+    default: defaultConfig.threadLimit
   })
   .option('k', {
     alias: 'log-level-console',

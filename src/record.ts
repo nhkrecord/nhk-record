@@ -159,6 +159,7 @@ export const findCropParameters = async (
   }
 
   const sortedParameters = sortBy(prop('time'))(parameters);
+  // TODO: prevent jitter
   const collapsedParameters = sortedParameters.reduce((acc, curr) => {
     if (curr.width !== last(acc)?.width) {
       acc.push(curr);

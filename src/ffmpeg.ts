@@ -137,6 +137,7 @@ const getFfmpegBoundaryDetectionArguments = (
 ): Array<string> =>
   [
     '-copyts',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-ss', `${from / 1000}`],
     limit ? ['-t', `${limit / 1000}`] : [],
     ['-i', path],
@@ -276,6 +277,7 @@ export const detectPotentialBoundaries = async (
 
 const getFfmpegNewsBannerDetectionArguments = (path: string): Array<string> =>
   [
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-i', path],
     ['-i', join(appRootPath.path, 'data/news_background.jpg')],
     [
@@ -319,6 +321,7 @@ export const detectNewsBanners = async (path: string): Promise<Array<DetectedFea
 const getFfmpegCropDetectionArguments = (path: string, from: number, limit: number) =>
   [
     '-copyts',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-ss', `${from / 1000}`],
     ['-t', `${limit / 1000}`],
     ['-i', path],
@@ -333,7 +336,7 @@ const getFfmpegCropDetectionArguments = (path: string, from: number, limit: numb
         '[vy][iy]blend=difference,crop=1920:928:0:60,split=2[vc0][vc1]',
         // Mirror content to get symmetrical crop
         '[vc0]hflip[vf]',
-        '[vf][vc1]blend=addition,cropdetect=16:2:1'
+        '[vf][vc1]blend=addition,cropdetect=24:2:1'
       ].join(';')
     ],
     ['-f', 'null'],
@@ -366,6 +369,7 @@ const getFfmpegCaptureArguments = (
 ): Array<string> =>
   [
     '-y',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-i', config.streamUrl],
     thumbnail
       ? [
@@ -407,7 +411,7 @@ export const captureStream = async (
   return outputLines;
 };
 
-export const generateTimeSequence = (
+const generateTimeSequence = (
   calcValue: (w: number) => number,
   cropParameters: Array<CropParameters>
 ) => {
@@ -422,6 +426,12 @@ export const generateTimeSequence = (
   )})`;
 };
 
+const calculateScaleWidth = (cropWidth: number): number =>
+  Math.round((FULL_CROP_WIDTH * FULL_CROP_WIDTH) / cropWidth / 2) * 2;
+
+const calculateOverlayPosition = (cropWidth: number): number =>
+  Math.round((cropWidth - FULL_CROP_WIDTH) / 2);
+
 const getFfmpegTrimArguments = (
   inputPath: string,
   outputPath: string,
@@ -431,42 +441,33 @@ const getFfmpegTrimArguments = (
 ): Array<string> =>
   [
     '-y',
-    '-copyts',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-i', inputPath],
     ['-ss', `${start / 1000}`],
     end ? ['-to', `${end / 1000}`] : [],
     ['-map_metadata', '0'],
-    [
-      '-filter_complex',
-      [
-        cropParameters.length >= 0
-          ? [
-              'nullsrc=size=1920x1080[base]',
-              `[base][0:0]overlay='${generateTimeSequence(
-                (v) => Math.floor((v - FULL_CROP_WIDTH) / 2),
-                cropParameters
-              )}':0:shortest=1[o]`,
-              `[o]scale='${generateTimeSequence(
-                (v) => Math.floor((FULL_CROP_WIDTH * FULL_CROP_WIDTH) / v),
-                cropParameters
-              )}':-1:eval=frame:flags=bicubic[s]`
-            ]
-          : [],
-        '[s]setpts=PTS-STARTPTS[v]'
-      ]
-        .flat()
-        .join(';')
-    ],
-    cropParameters.length >= 0
+    cropParameters.length > 0
       ? [
-          ['-acodec', 'copy'],
-          ['-vcodec', 'libx264'],
-          ['-crf', '20']
+          '-filter_complex',
+          [
+            'nullsrc=size=1920x1080[base]',
+            `[base][0:0]overlay='${generateTimeSequence(
+              calculateOverlayPosition,
+              cropParameters
+            )}':0:shortest=1[o]`,
+            `[o]scale='${generateTimeSequence(
+              calculateScaleWidth,
+              cropParameters
+            )}':-1:eval=frame:flags=bicubic[s]`,
+            '[s]setpts=PTS-STARTPTS[v]'
+          ].join(';')
         ]
-      : [['-codec', 'copy']],
-    ['-map', '[v]'],
+      : [],
+    ['-map', cropParameters.length > 0 ? '[v]' : '0:0'],
     ['-map', '0:1'],
     ['-map', '0:2?'],
+    ['-codec', 'copy'],
+    cropParameters.length > 0 ? ['-copyts', ['-crf', '20'], ['-codec:v:0', 'libx264']] : [],
     ['-f', 'mp4'],
     outputPath
   ].flat(2);
