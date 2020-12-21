@@ -459,7 +459,8 @@ const getFfmpegTrimArguments = (
               calculateScaleWidth,
               cropParameters
             )}':-1:eval=frame:flags=bicubic[s]`,
-            '[s]setpts=PTS-STARTPTS[v]'
+            '[s]crop=1920:1080:0:0[c]',
+            '[c]setpts=PTS-STARTPTS[v]'
           ].join(';')
         ]
       : [],
