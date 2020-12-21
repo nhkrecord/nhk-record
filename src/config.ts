@@ -30,7 +30,7 @@ const config = yargs(process.argv.slice(2))
     alias: 'crop',
     describe: [
       'Attempt to automatically detect and crop out breaking news banners',
-      '(requires re-encoding) (this uses a lot of memory)'
+      '(requires re-encoding) (this uses a lot of CPU & memory)'
     ].join(' '),
     type: 'boolean',
     default: defaultConfig.crop
