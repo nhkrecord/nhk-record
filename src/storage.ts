@@ -33,7 +33,7 @@ const getSuffix = (suffixType: FileType, programme: Programme): string =>
     [FileType.RAW]: () => '.raw',
     [FileType.SUCCESSFUL]: () => '',
     [FileType.THUMBNAIL]: () => '.jpg',
-    [FileType.POST_PROCESSED]: () => '.trimmed'
+    [FileType.POST_PROCESSED]: () => '.postprocessed'
   }[suffixType](programme));
 
 export const makeSaveDirectory = async (): Promise<string> => {
