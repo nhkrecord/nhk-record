@@ -75,7 +75,7 @@ const config = yargs(process.argv.slice(2))
   .option('l', {
     alias: 'log-level-file',
     describe: 'Logging level to output to log file',
-    choices: ['debug', 'info', 'error', 'none'],
+    choices: ['debug', 'info', 'error', 'none', 'silly'],
     type: 'string',
     default: defaultConfig.logLevelFile
   })
