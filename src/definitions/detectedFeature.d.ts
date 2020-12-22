@@ -1,4 +1,4 @@
-interface BoundaryCandidate {
+interface DetectedFeature {
   start: number;
   end: number;
   firstFrame: number;

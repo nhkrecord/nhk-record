@@ -11,10 +11,17 @@ export enum FileType {
   FAILED,
   IN_PROGRESS,
   METADATA,
+  POST_PROCESSED,
   RAW,
   SUCCESSFUL,
-  THUMBNAIL,
-  TRIMMED
+  THUMBNAIL
+}
+
+interface RecordingMetadata {
+  start: Date;
+  end: Date;
+  trimmed?: boolean;
+  cropped?: boolean;
 }
 
 export const remove = (path: string): Promise<void> => unlink(path);
@@ -28,7 +35,7 @@ const getSuffix = (suffixType: FileType, programme: Programme): string =>
     [FileType.RAW]: () => '.raw',
     [FileType.SUCCESSFUL]: () => '',
     [FileType.THUMBNAIL]: () => '.jpg',
-    [FileType.TRIMMED]: () => '.trimmed'
+    [FileType.POST_PROCESSED]: () => '.postprocessed'
   }[suffixType](programme));
 
 export const makeSaveDirectory = async (): Promise<string> => {
@@ -63,8 +70,8 @@ export const getSavePath = (programme: Programme): string =>
 export const getInProgressPath = (programme: Programme): string =>
   `${getSavePath(programme)}${getSuffix(FileType.IN_PROGRESS, programme)}`;
 
-export const getTrimmedPath = (programme: Programme): string =>
-  `${getSavePath(programme)}${getSuffix(FileType.TRIMMED, programme)}`;
+export const getPostProcessedPath = (programme: Programme): string =>
+  `${getSavePath(programme)}${getSuffix(FileType.POST_PROCESSED, programme)}`;
 
 export const recordingExists = async (programme: Programme): Promise<boolean> =>
   (
@@ -117,7 +124,7 @@ export const writeThumbnail = async (
 export const writeMetadata = async (
   programme: Programme,
   type: FileType,
-  recording: { start: Date; end: Date; trimmed?: boolean }
+  recording: RecordingMetadata
 ): Promise<string> => {
   const path = `${getSavePath(programme)}${getSuffix(type, programme)}`;
   const metadataPath = `${path}${getSuffix(FileType.METADATA, programme)}`;
@@ -134,6 +141,7 @@ export const writeMetadata = async (
       recordDateStart: recording?.start?.toISOString(),
       recordDateEnd: recording?.end?.toISOString(),
       trimmed: recording?.trimmed ?? false,
+      cropped: recording?.cropped ?? false,
       sha256
     },
     null,

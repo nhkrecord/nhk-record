@@ -3,8 +3,8 @@ import defaultConfig from '../config.json';
 
 type inferredConfigType = typeof defaultConfig;
 interface Config extends inferredConfigType {
-  logLevelConsole: 'debug' | 'info' | 'error' | 'none';
-  logLevelFile: 'debug' | 'info' | 'error' | 'none';
+  logLevelConsole: 'debug' | 'info' | 'error' | 'none' | 'silly';
+  logLevelFile: 'debug' | 'info' | 'error' | 'none' | 'silly';
 }
 
 const config = yargs(process.argv.slice(2))
@@ -26,6 +26,15 @@ const config = yargs(process.argv.slice(2))
     config: true,
     type: 'string'
   })
+  .option('C', {
+    alias: 'crop',
+    describe: [
+      'Attempt to automatically detect and crop out breaking news banners',
+      '(requires re-encoding) (this uses a lot of CPU & memory)'
+    ].join(' '),
+    type: 'boolean',
+    default: defaultConfig.crop
+  })
   .option('d', {
     alias: 'save-dir',
     describe: 'Directory in which to save recorded programmes',
@@ -44,18 +53,24 @@ const config = yargs(process.argv.slice(2))
     type: 'string',
     default: defaultConfig.streamUrl
   })
+  .option('j', {
+    alias: 'thread-limit',
+    describe: 'Maximum threads to use for video processing',
+    type: 'number',
+    default: defaultConfig.threadLimit
+  })
   .option('k', {
     alias: 'log-level-console',
     describe: 'Logging level to output to console',
-    choices: ['debug', 'info', 'error', 'none'],
+    choices: ['debug', 'info', 'error', 'none', 'silly'],
     type: 'string',
     default: defaultConfig.logLevelConsole
   })
   .option('K', {
-    alias: 'keep-untrimmed',
-    describe: 'If auto-trimming is enabled, also keep the original untrimmed copy',
+    alias: ['keep-original', 'keep-untrimmed'],
+    describe: 'If any post-processing options are enabled, also keep the original copy',
     type: 'boolean',
-    default: defaultConfig.keepUntrimmed
+    default: defaultConfig.keepOriginal
   })
   .option('l', {
     alias: 'log-level-file',

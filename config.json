@@ -1,6 +1,7 @@
 {
   "assetsUrl": "https://www3.nhk.or.jp",
-  "keepUntrimmed": true,
+  "crop": true,
+  "keepOriginal": true,
   "logFile": "/logs/nhk-record.log",
   "logLevelConsole": "debug",
   "logLevelFile": "debug",
@@ -10,6 +11,7 @@
   "saveDir": "/recordings/",
   "scheduleUrl": "https://api.nhk.or.jp",
   "streamUrl": "https://b-nhkwlive-ojp.webcdn.stream.ne.jp/hls/live/2003459-b/nhkwlive-ojp-en/index_4M.m3u8",
+  "threadLimit": 0,
   "timeOffset": 0,
   "trim": true
 }

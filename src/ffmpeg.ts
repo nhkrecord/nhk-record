@@ -1,14 +1,12 @@
 import appRootPath from 'app-root-path';
-import { execFile } from 'child_process';
 import compareFunc from 'compare-func';
 import IntervalTree from 'node-interval-tree';
 import { join } from 'path';
-import { head, last } from 'ramda';
-import streamToPromise from 'stream-to-promise';
-import { promisify } from 'util';
+import { init, head, last } from 'ramda';
+import { Readable } from 'stream';
 import config from './config';
-import { ExecError } from './error';
 import logger from './logger';
+import { execute } from './utils';
 
 const BLACKFRAME_FILTER_OUTPUT_PATTERN = new RegExp(
   [
@@ -34,10 +32,32 @@ const SILENCEDETECT_FILTER_OUTPUT_PATTERN = new RegExp(
     .join(' ')
 );
 
-interface Strategy {
+const CROPDETECT_FILTER_OUTPUT_PATTERN = new RegExp(
+  [
+    /\[Parsed_cropdetect_(?<filterNum>\d+) @ \w+\]/,
+    /x1:(?<x1>\d+)/,
+    /x2:(?<x2>\d+)/,
+    /y1:(?<y1>\d+)/,
+    /y2:(?<y2>\d+)/,
+    /w:(?<width>\d+)/,
+    /h:(?<height>\d+)/,
+    /x:(?<x>\d+)/,
+    /y:(?<y>\d+)/,
+    /pts:\d+/,
+    /t:(?<time>[\d.]+)/,
+    /crop=\d+:\d+:\d+:\d+/
+  ]
+    .map((r) => r.source)
+    .join(' ')
+);
+
+const FULL_CROP_WIDTH = 1920;
+
+interface FrameSearchStrategy {
   name: string;
   filters: Array<number>;
-  minSilenceSeconds: number;
+  maxSkip?: number;
+  minSilenceSeconds?: number;
   minFrames: number;
 }
 
@@ -54,7 +74,7 @@ interface BlackframeOutput {
 
 const MINIMUM_BOUNDARY_SILENCE_SECONDS = 0.1;
 
-const STRATEGIES = [
+const BOUNDARY_STRATEGIES = [
   {
     name: 'black-logo',
     filters: [9],
@@ -85,9 +105,14 @@ const STRATEGIES = [
     minSilenceSeconds: 0,
     minFrames: 1
   }
-] as Array<Strategy>;
+] as Array<FrameSearchStrategy>;
 
-const execFileAsync = promisify(execFile);
+const NEWS_BANNER_STRATEGY = {
+  name: 'news-banner-background',
+  filters: [13],
+  maxSkip: 120,
+  minFrames: 120
+} as FrameSearchStrategy;
 
 const getFfprobeArguments = (path: string): Array<string> =>
   [['-v', 'quiet'], ['-print_format', 'json'], '-show_format', path].flat();
@@ -97,12 +122,25 @@ export const getFileDuration = async (path: string): Promise<number> => {
 
   logger.debug(`Invoking ffprobe with args: ${args.join(' ')}`);
 
-  const { stdout } = await execFileAsync('ffprobe', args);
+  const { stdout } = await execute('ffprobe', args);
   const {
     format: { duration }
-  } = JSON.parse(stdout);
+  } = JSON.parse(stdout.join(''));
 
   return parseFloat(duration) * 1_000;
+};
+
+export const getStreamCount = async (path: string): Promise<number> => {
+  const args = getFfprobeArguments(path);
+
+  logger.debug(`Invoking ffprobe with args: ${args.join(' ')}`);
+
+  const { stdout } = await execute('ffprobe', args);
+  const {
+    format: { nb_streams: numStreams }
+  } = JSON.parse(stdout.join(''));
+
+  return parseInt(numStreams);
 };
 
 const getFfmpegBoundaryDetectionArguments = (
@@ -112,6 +150,7 @@ const getFfmpegBoundaryDetectionArguments = (
 ): Array<string> =>
   [
     '-copyts',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-ss', `${from / 1000}`],
     limit ? ['-t', `${limit / 1000}`] : [],
     ['-i', path],
@@ -159,13 +198,11 @@ const findSilences = (ffmpegLines: Array<string>): Array<Silence> =>
       endTime: Math.round(parseFloat(endTime) * 1000)
     }));
 
-const findBoundariesCandidates = (
+const findBlackframeGroups = (
   ffmpegLines: Array<string>,
-  candidateWindows: IntervalTree<number>,
-  blackframeFilters: Array<number>,
-  mininimumSilenceDuration: number,
-  minimumConsecutiveFrames: number
-): Array<BoundaryCandidate> =>
+  strategy: FrameSearchStrategy,
+  candidateWindows: IntervalTree<number> = new IntervalTree<number>()
+): Array<DetectedFeature> =>
   ffmpegLines
     .map((line) => line.match(BLACKFRAME_FILTER_OUTPUT_PATTERN))
     .filter((x) => x)
@@ -177,9 +214,10 @@ const findBoundariesCandidates = (
           time: Math.round(parseFloat(time) * 1000)
         } as BlackframeOutput)
     )
-    .filter(({ filterNum }) => blackframeFilters.includes(filterNum))
+    .filter(({ filterNum }) => strategy.filters.includes(filterNum))
     .filter(
-      ({ time }) => head(candidateWindows.search(time, time)) ?? 0 >= mininimumSilenceDuration
+      ({ time }) =>
+        head(candidateWindows.search(time, time)) ?? 0 >= (strategy.minSilenceSeconds ?? 0)
     )
     .sort(compareFunc(['filterNum', 'frame']))
     .reduce((frameGroups, frame) => {
@@ -191,7 +229,8 @@ const findBoundariesCandidates = (
       const lastFrame = last(frameGroup);
       if (
         !lastFrame ||
-        (frame.frameNum - lastFrame.frameNum === 1 && frame.filterNum === lastFrame.filterNum)
+        (frame.frameNum - lastFrame.frameNum <= (strategy.maxSkip ?? 1) &&
+          frame.filterNum === lastFrame.filterNum)
       ) {
         frameGroup.push(frame);
       } else {
@@ -199,7 +238,7 @@ const findBoundariesCandidates = (
       }
       return frameGroups;
     }, [] as Array<Array<BlackframeOutput>>)
-    .filter((frameGroup) => frameGroup.length >= minimumConsecutiveFrames)
+    .filter((frameGroup) => frameGroup.length >= strategy.minFrames)
     .map(
       (frameGroup) =>
         ({
@@ -207,25 +246,23 @@ const findBoundariesCandidates = (
           end: last(frameGroup).time,
           firstFrame: head(frameGroup).frameNum,
           lastFrame: last(frameGroup).frameNum
-        } as BoundaryCandidate)
+        } as DetectedFeature)
     );
 
 export const detectPotentialBoundaries = async (
   path: string,
   from: number,
   limit?: number
-): Promise<Array<BoundaryCandidate>> => {
+): Promise<Array<DetectedFeature>> => {
   const args = getFfmpegBoundaryDetectionArguments(path, from, limit);
 
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
 
   const ffmpegStartTime = process.hrtime.bigint();
-  const { stderr } = await execFileAsync('ffmpeg', args);
-  logger.debug(stderr);
+  const { stderr: outputLines } = await execute('ffmpeg', args);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 
-  const outputLines = stderr.split('\n');
   const silences = findSilences(outputLines);
   logger.debug(`Found ${silences.length} silences`, silences);
 
@@ -239,15 +276,9 @@ export const detectPotentialBoundaries = async (
     return tree;
   }, new IntervalTree<number>());
 
-  for (const strategy of STRATEGIES) {
+  for (const strategy of BOUNDARY_STRATEGIES) {
     logger.debug(`Searching for candidates using ${strategy.name} strategy`);
-    const candidates = findBoundariesCandidates(
-      outputLines,
-      candidateWindows,
-      strategy.filters,
-      strategy.minSilenceSeconds,
-      strategy.minFrames
-    );
+    const candidates = findBlackframeGroups(outputLines, strategy, candidateWindows);
     logger.debug(`Found ${candidates.length} boundary candidates`, candidates);
     if (candidates.length > 0) {
       return candidates;
@@ -255,6 +286,92 @@ export const detectPotentialBoundaries = async (
   }
 
   return [];
+};
+
+const getFfmpegNewsBannerDetectionArguments = (path: string): Array<string> =>
+  [
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
+    ['-i', path],
+    ['-i', join(appRootPath.path, 'data/news_background.jpg')],
+    [
+      '-filter_complex',
+      [
+        'nullsrc=size=184x800:r=29.97[base]',
+        // Extract luma channels
+        '[0:0]extractplanes=y[vy]',
+        '[1]extractplanes=y[iy]',
+        '[vy]split=2[vy0][vy1]',
+        '[iy]split=2[iy0][iy1]',
+        // Crop left and right margin areas
+        '[vy0]crop=92:800:0:174[vyl]',
+        '[vy1]crop=92:800:1828:174[vyr]',
+        '[iy0]crop=92:800:0:174[iyl]',
+        '[iy1]crop=92:800:1828:174[iyr]',
+        // Compare left and right margins with news banner background
+        '[vyl][iyl]blend=difference[dl]',
+        '[vyr][iyr]blend=difference[dr]',
+        '[base][dl]overlay=0:0:shortest=1[ol]',
+        '[ol][dr]overlay=92:0,blackframe=99:16'
+      ].join(';')
+    ],
+    ['-f', 'null'],
+    '-'
+  ].flat();
+
+export const detectNewsBanners = async (path: string): Promise<Array<DetectedFeature>> => {
+  const args = getFfmpegNewsBannerDetectionArguments(path);
+
+  logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
+  const ffmpegStartTime = process.hrtime.bigint();
+  const { stderr: outputLines } = await execute('ffmpeg', args);
+  const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
+  logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
+
+  const newsBanners = findBlackframeGroups(outputLines, NEWS_BANNER_STRATEGY);
+  return newsBanners;
+};
+
+const getFfmpegCropDetectionArguments = (path: string, from: number, limit: number) =>
+  [
+    '-copyts',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
+    ['-ss', `${from / 1000}`],
+    ['-t', `${limit / 1000}`],
+    ['-i', path],
+    ['-i', join(appRootPath.path, 'data/news_background.jpg')],
+    [
+      '-filter_complex',
+      [
+        // Extract luma channels
+        '[0:0]extractplanes=y[vy]',
+        '[1]extractplanes=y[iy]',
+        // Find difference with news background
+        '[vy][iy]blend=difference,crop=1920:928:0:60,split=2[vc0][vc1]',
+        // Mirror content to get symmetrical crop
+        '[vc0]hflip[vf]',
+        '[vf][vc1]blend=addition,cropdetect=24:2:1'
+      ].join(';')
+    ],
+    ['-f', 'null'],
+    '-'
+  ].flat();
+
+export const detectCropArea = async (path: string, from: number, limit: number) => {
+  const args = getFfmpegCropDetectionArguments(path, from, limit);
+
+  logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
+  const ffmpegStartTime = process.hrtime.bigint();
+  const { stderr: outputLines } = await execute('ffmpeg', args);
+  const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
+  logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
+
+  return outputLines
+    .map((line) => line.match(CROPDETECT_FILTER_OUTPUT_PATTERN))
+    .filter((x) => x)
+    .map(({ groups: { width, time } }) => ({
+      time: parseFloat(time) * 1000,
+      width: parseInt(width)
+    }));
 };
 
 const getFfmpegCaptureArguments = (
@@ -265,6 +382,7 @@ const getFfmpegCaptureArguments = (
 ): Array<string> =>
   [
     '-y',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-i', config.streamUrl],
     thumbnail
       ? [
@@ -292,77 +410,112 @@ export const captureStream = async (
   targetSeconds: number,
   programme: Programme,
   thumbnailData: Buffer | null
-): Promise<string> => {
-  const ffmpegArgs = getFfmpegCaptureArguments(path, programme, !!thumbnailData, targetSeconds);
+): Promise<Array<string>> => {
+  const args = getFfmpegCaptureArguments(path, programme, !!thumbnailData, targetSeconds);
 
-  logger.debug(`Invoking ffmpeg with args: ${ffmpegArgs.join(' ')}`);
-  const proc = execFile('ffmpeg', ffmpegArgs);
-  const { stdout, stderr, stdin } = proc;
-  if (thumbnailData) {
-    stdin.write(thumbnailData);
-    stdin.end();
+  const thumbnailStream = thumbnailData ? Readable.from(thumbnailData) : null;
+
+  logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
+  const ffmpegStartTime = process.hrtime.bigint();
+  const { stderr: outputLines } = await execute('ffmpeg', args, thumbnailStream);
+  const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
+  logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
+
+  return outputLines;
+};
+
+const generateTimeSequence = (
+  calcValue: (w: number) => number,
+  cropParameters: Array<CropParameters>
+) => {
+  const { time, width = FULL_CROP_WIDTH } = last(cropParameters) ?? {};
+  if (!time) {
+    return `${calcValue(width)}`;
   }
 
-  const [stdoutContent, stderrContent] = (
-    await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
-  ).map((b) => b.toString('utf-8'));
-
-  return new Promise((resolve, reject) => {
-    proc.on('exit', (code) => {
-      if (code !== 0) {
-        return reject(new ExecError(`Non-zero exit code: ${code}`, stdoutContent, stderrContent));
-      }
-
-      resolve(stderrContent);
-    });
-  });
+  return `if(gte(t,${time / 1000}),${calcValue(width)},${generateTimeSequence(
+    calcValue,
+    init(cropParameters)
+  )})`;
 };
+
+const calculateScaleWidth = (cropWidth: number): number =>
+  Math.round((FULL_CROP_WIDTH * FULL_CROP_WIDTH) / cropWidth / 2) * 2;
+
+const calculateOverlayPosition = (cropWidth: number): number =>
+  Math.round((cropWidth - FULL_CROP_WIDTH) / 2);
 
 const getFfmpegTrimArguments = (
   inputPath: string,
   outputPath: string,
   start: number,
-  end: number
+  end: number,
+  cropParameters: Array<CropParameters>,
+  hasThumbnail: boolean
 ): Array<string> =>
   [
     '-y',
+    config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-i', inputPath],
     ['-ss', `${start / 1000}`],
     end ? ['-to', `${end / 1000}`] : [],
-    ['-map', '0'],
-    ['-map_metadata', '0'],
     ['-codec', 'copy'],
+    cropParameters.length > 0
+      ? [
+          [
+            '-filter_complex',
+            [
+              'nullsrc=size=1920x1080:r=29.97[base]',
+              `[base][0:0]overlay='${generateTimeSequence(
+                calculateOverlayPosition,
+                cropParameters
+              )}':0:shortest=1[o]`,
+              `[o]scale='${generateTimeSequence(
+                calculateScaleWidth,
+                cropParameters
+              )}':-1:eval=frame:flags=bicubic[s]`,
+              '[s]crop=1920:1080:0:0[c]'
+            ].join(';')
+          ],
+          ['-map', '[c]'],
+          ['-crf', '19'],
+          ['-preset', 'veryfast'],
+          ['-codec:v:0', 'libx264']
+        ]
+      : ['-map', '0:0'],
+    ['-map', '0:1'],
+    hasThumbnail
+      ? [
+          ['-filter_complex', `[0:2]setpts=PTS+${start / 1000}/TB[tn]`],
+          ['-map', '[tn]'],
+          ['-codec:v:1', 'mjpeg']
+        ]
+      : [],
+    ['-map_metadata', '0'],
     ['-f', 'mp4'],
     outputPath
-  ].flat();
+  ].flat(2);
 
-export const trim = async (
+export const postProcessRecording = async (
   inputPath: string,
   outputPath: string,
   start: number,
-  end: number
+  end: number,
+  cropParameters: Array<CropParameters>
 ): Promise<void> => {
-  const args = getFfmpegTrimArguments(inputPath, outputPath, start, end);
+  const hasThumbnail = (await getStreamCount(inputPath)) > 2;
+  const args = getFfmpegTrimArguments(
+    inputPath,
+    outputPath,
+    start,
+    end,
+    cropParameters,
+    hasThumbnail
+  );
 
   logger.debug(`Invoking ffmpeg with args: ${args.join(' ')}`);
-
   const ffmpegStartTime = process.hrtime.bigint();
-  const proc = execFile('ffmpeg', args);
-  const { stdout, stderr } = proc;
-  const [stdoutContent, stderrContent] = (
-    await Promise.all([streamToPromise(stdout), streamToPromise(stderr)])
-  ).map((b) => b.toString('utf-8'));
-
-  const output = await new Promise((resolve, reject) => {
-    proc.on('exit', (code) => {
-      if (code !== 0) {
-        return reject(new ExecError(`Non-zero exit code: ${code}`, stdoutContent, stderrContent));
-      }
-
-      resolve(stderrContent);
-    });
-  });
-  logger.debug(output);
+  await execute('ffmpeg', args);
   const ffmpegDuration = process.hrtime.bigint() - ffmpegStartTime;
   logger.info(`Done in ${ffmpegDuration / 1_000_000n} ms`);
 };
