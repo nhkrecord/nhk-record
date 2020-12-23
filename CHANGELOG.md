@@ -1,3 +1,10 @@
+# [0.8.0](https://github.com/nhkrecord/nhk-record/compare/v0.7.2...v0.8.0) (2020-12-23)
+
+
+### Features
+
+* add auto-cropping ([76cdaf2](https://github.com/nhkrecord/nhk-record/commit/76cdaf28526a683a7e37f87cf7e16b83a0d768ce)), closes [#19](https://github.com/nhkrecord/nhk-record/issues/19)
+
 ## [0.7.2](https://github.com/nhkrecord/nhk-record/compare/v0.7.1...v0.7.2) (2020-12-20)
 
 
