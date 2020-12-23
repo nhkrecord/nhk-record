@@ -1,8 +1,8 @@
 export class ExecError extends Error {
-  stdout: string;
-  stderr: string;
+  stdout: string | Array<string>;
+  stderr: string | Array<string>;
 
-  constructor(message: string, stdout: string, stderr: string) {
+  constructor(message: string, stdout: string | Array<string>, stderr: string | Array<string>) {
     super(message);
     this.name = 'ExecError';
     this.stdout = stdout;

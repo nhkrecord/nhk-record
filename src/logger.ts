@@ -21,7 +21,7 @@ const logger = createLogger({
   )
 });
 
-if (config.logLevelConsole !== 'none') {
+if (process.env.NODE_ENV !== 'test' && config.logLevelConsole !== 'none') {
   logger.add(
     new transports.Console({
       level: config.logLevelConsole
@@ -29,7 +29,7 @@ if (config.logLevelConsole !== 'none') {
   );
 }
 
-if (config.logFile && config.logLevelFile !== 'none') {
+if (process.env.NODE_ENV !== 'test' && config.logFile && config.logLevelFile !== 'none') {
   logger.add(
     new transports.File({
       level: config.logLevelFile,
