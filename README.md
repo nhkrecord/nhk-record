@@ -5,6 +5,8 @@
 - [Node.js](https://github.com/nodejs/node) `>= 15.x`
 - [FFmpeg](https://github.com/FFmpeg/FFmpeg) `>= 4.3`
 
+This software is only tested on Linux and macOS. For running on Windows, [Docker for Windows](https://docs.docker.com/docker-for-windows/install/) may be the best option. See [Running as a docker container](#running-as-a-docker-container).
+
 ## Installing
 
 ```
