@@ -58,7 +58,8 @@ Options can be specified via the CLI or via a config file.
                                          enabled, also keep the original copy
                                                        [boolean] [default: true]
   -l, --log-level-file                   Logging level to output to log file
-         [string] [choices: "debug", "info", "error", "none"] [default: "debug"]
+         [string] [choices: "debug", "info", "error", "none", "silly"] [default:
+                                                                        "debug"]
   -m, --match-pattern                    Glob pattern of desired program name
                                          (can be used multiple times)
                                                         [array] [default: ["*"]]
