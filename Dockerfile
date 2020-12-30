@@ -95,7 +95,7 @@ RUN apk add --no-cache --virtual .build-deps-yarn curl gnupg tar \
   && yarn --version
 
 ENV UID=1000 GID=1000
-RUN apk -U upgrade && apk add ffmpeg su-exec
+RUN apk add --no-cache su-exec
 RUN mkdir /app
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json /app/
