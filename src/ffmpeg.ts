@@ -445,7 +445,35 @@ const calculateScaleWidth = (cropWidth: number): number =>
 const calculateOverlayPosition = (cropWidth: number): number =>
   Math.round((cropWidth - FULL_CROP_WIDTH) / 2);
 
-const getFfmpegTrimArguments = (
+const generateFilterChain = (
+  start: number,
+  cropParameters: Array<CropParameters>,
+  hasThumbnail: boolean
+): Array<string> => {
+  const filters = [
+    cropParameters.length > 0
+      ? [
+          'nullsrc=size=1920x1080:r=29.97[base]',
+          `[base][0:0]overlay='${generateTimeSequence(
+            calculateOverlayPosition,
+            cropParameters
+          )}':0:shortest=1[o]`,
+          `[o]scale='${generateTimeSequence(
+            calculateScaleWidth,
+            cropParameters
+          )}':-1:eval=frame:flags=bicubic[s]`,
+          '[s]crop=1920:1080:0:0[c]'
+        ]
+      : [],
+    hasThumbnail ? `[1:2]setpts=PTS+${start / 1000}/TB[tn]` : []
+  ]
+    .flat()
+    .join(';');
+
+  return filters ? ['-filter_complex', filters] : [];
+};
+
+const getFfmpegPostProcessArguments = (
   inputPath: string,
   outputPath: string,
   start: number,
@@ -457,26 +485,13 @@ const getFfmpegTrimArguments = (
     '-y',
     config.threadLimit > 0 ? ['-threads', `${config.threadLimit}`] : [],
     ['-i', inputPath],
+    hasThumbnail ? ['-i', inputPath] : [],
     ['-ss', `${start / 1000}`],
     end ? ['-to', `${end / 1000}`] : [],
     ['-codec', 'copy'],
+    generateFilterChain(start, cropParameters, hasThumbnail),
     cropParameters.length > 0
       ? [
-          [
-            '-filter_complex',
-            [
-              'nullsrc=size=1920x1080:r=29.97[base]',
-              `[base][0:0]overlay='${generateTimeSequence(
-                calculateOverlayPosition,
-                cropParameters
-              )}':0:shortest=1[o]`,
-              `[o]scale='${generateTimeSequence(
-                calculateScaleWidth,
-                cropParameters
-              )}':-1:eval=frame:flags=bicubic[s]`,
-              '[s]crop=1920:1080:0:0[c]'
-            ].join(';')
-          ],
           ['-map', '[c]'],
           ['-crf', '19'],
           ['-preset', 'veryfast'],
@@ -486,9 +501,9 @@ const getFfmpegTrimArguments = (
     ['-map', '0:1'],
     hasThumbnail
       ? [
-          ['-filter_complex', `[0:2]setpts=PTS+${start / 1000}/TB[tn]`],
           ['-map', '[tn]'],
-          ['-codec:v:1', 'mjpeg']
+          ['-codec:v:1', 'mjpeg'],
+          ['-disposition:v:1', 'attached_pic']
         ]
       : [],
     ['-map_metadata', '0'],
@@ -504,7 +519,7 @@ export const postProcessRecording = async (
   cropParameters: Array<CropParameters>
 ): Promise<void> => {
   const hasThumbnail = (await getStreamCount(inputPath)) > 2;
-  const args = getFfmpegTrimArguments(
+  const args = getFfmpegPostProcessArguments(
     inputPath,
     outputPath,
     start,
