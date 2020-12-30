@@ -1,3 +1,10 @@
+## [0.8.1](https://github.com/nhkrecord/nhk-record/compare/v0.8.0...v0.8.1) (2020-12-30)
+
+
+### Bug Fixes
+
+* update ffmpeg version ([e10c97d](https://github.com/nhkrecord/nhk-record/commit/e10c97d7dc4f8d9948e218f95121c033e603bf42))
+
 # [0.8.0](https://github.com/nhkrecord/nhk-record/compare/v0.7.2...v0.8.0) (2020-12-23)
 
 
