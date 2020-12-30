@@ -1,3 +1,10 @@
+## [0.8.2](https://github.com/nhkrecord/nhk-record/compare/v0.8.1...v0.8.2) (2020-12-30)
+
+
+### Bug Fixes
+
+* use less memory during post-processing ([053b3f6](https://github.com/nhkrecord/nhk-record/commit/053b3f69e858151ffdbe14a303ddb2d3a481781b))
+
 ## [0.8.1](https://github.com/nhkrecord/nhk-record/compare/v0.8.0...v0.8.1) (2020-12-30)
 
 
