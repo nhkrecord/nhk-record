@@ -1,3 +1,10 @@
+## [0.8.3](https://github.com/nhkrecord/nhk-record/compare/v0.8.2...v0.8.3) (2020-12-31)
+
+
+### Bug Fixes
+
+* reduce false news-banner detection ([9e01225](https://github.com/nhkrecord/nhk-record/commit/9e012254d6713ab942efee3dc82936d1b408141c))
+
 ## [0.8.2](https://github.com/nhkrecord/nhk-record/compare/v0.8.1...v0.8.2) (2020-12-30)
 
 
