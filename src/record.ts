@@ -141,21 +141,22 @@ export const findCropParameters = async (
 
   const parameters: Array<CropParameters> = [];
   for (const banner of banners) {
-    parameters.push(
-      ...(await detectCropArea(
-        path,
-        Math.max(0, banner.start - NEWS_BANNER_TRANSITION_DURATION / 2),
-        NEWS_BANNER_TRANSITION_DURATION
-      ))
+    const startCropAreas = await detectCropArea(
+      path,
+      Math.max(0, banner.start - NEWS_BANNER_TRANSITION_DURATION / 2),
+      NEWS_BANNER_TRANSITION_DURATION
     );
 
-    parameters.push(
-      ...(await detectCropArea(
-        path,
-        Math.min(duration, banner.end - NEWS_BANNER_TRANSITION_DURATION / 2),
-        NEWS_BANNER_TRANSITION_DURATION
-      ))
+    const endCropAreas = await detectCropArea(
+      path,
+      Math.min(duration, banner.end - NEWS_BANNER_TRANSITION_DURATION / 2),
+      NEWS_BANNER_TRANSITION_DURATION
     );
+
+    if (startCropAreas.length > 2 || endCropAreas.length > 2) {
+      parameters.push(...startCropAreas);
+      parameters.push(...endCropAreas);
+    }
   }
 
   const sortedParameters = sortBy(prop('time'))(parameters);
