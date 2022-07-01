@@ -90,7 +90,7 @@ The location of the config file can be specified with the `-c` option.
   "minimumDuration": 240000,
   "safetyBuffer": 40000,
   "saveDir": "/recordings/",
-  "scheduleUrl": "https://api.nhk.or.jp",
+  "scheduleUrl": "https://nwapi.nhk.jp",
   "streamUrl": "https://b-nhkwlive-ojp.webcdn.stream.ne.jp/hls/live/2003459-b/nhkwlive-ojp-en/index_4M.m3u8",
   "threadLimit": 0,
   "timeOffset": 0,
