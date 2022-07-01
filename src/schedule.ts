@@ -35,7 +35,7 @@ const getScheduleForPeriod = async (apiKey: string, start: Date, end: Date): Pro
   const endMillis = end.getTime();
 
   const res = await fetch(
-    `${config.scheduleUrl}/nhkworld/epg/v7a/world/s${startMillis}-e${endMillis}.json?apikey=${apiKey}`
+    `${config.scheduleUrl}/nhkworld/epg/v7b/world/s${startMillis}-e${endMillis}.json?apikey=${apiKey}`
   );
 
   return await res.json();
