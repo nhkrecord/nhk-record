@@ -1,5 +1,9 @@
 # nhk-record
 
+Automated recording of NHK World's 24/7 live stream. This system records each show into an individual video file complete with metadata and formatted filenames. Supports filtering shows by title so it records only what you want to watch. 
+
+This is an unofficial fan work made for personal use only. This project is in no way affiliated with NHK, NHK World, Japan International Broadcasting, Inc. or any other entities therein.
+
 ## Dependencies
 
 - [Node.js](https://github.com/nodejs/node) `>= 15.x`
@@ -10,7 +14,7 @@ This software is only tested on Linux and macOS. For running on Windows, [Docker
 ## Installing
 
 ```
-git clone git@github.com:nhkrecord/nhk-record.git
+git clone git@github.com:CoordSpace/nhk-record.git
 cd nhk-record
 npm install
 ```
@@ -110,7 +114,7 @@ Match patterns use [micromatch](https://github.com/micromatch/micromatch). For e
 
 ## Running as a docker container
 
-Docker images are available on [Docker Hub](https://hub.docker.com/r/nhkrecord/nhk-record)
+Docker images are available on [Docker Hub](https://hub.docker.com/repository/docker/coordspace/nhk-record)
 
 Example docker-compose.yml:
 
@@ -118,7 +122,7 @@ Example docker-compose.yml:
 version: "3.7"
 services:
   nhk-record:
-    image: nhkrecord/nhk-record:latest
+    image: coordspace/nhk-record:latest
     restart: unless-stopped
     volumes:
       - "/path/to/my/config.json:/config.json:ro"
