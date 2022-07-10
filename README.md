@@ -4,6 +4,12 @@ Automated recording of NHK World's 24/7 live stream. This system records each sh
 
 This is an unofficial fan work made for personal use only. This project is in no way affiliated with NHK, NHK World, Japan International Broadcasting, Inc. or any other entities therein.
 
+## Note
+
+This is a maintenance fork of [nhkrecord/nhk-record](https://github.com/nhkrecord/nhk-record), created after NHK updated some core API endpoints. Do not expect any new features and if the original maintainer returns to the upstream project someday, it will be recommended to go back to using their repo after my fixes are pulled. 
+
+So please, watch the [relevant pull request](https://github.com/nhkrecord/nhk-record/pull/35) for any updates.
+
 ## Dependencies
 
 - [Node.js](https://github.com/nodejs/node) `>= 15.x`
