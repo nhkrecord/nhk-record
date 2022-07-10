@@ -32,8 +32,7 @@ jobs:
         run: npm run test:ci
 
       - name: Publish unit test results
-        uses: docker://ghcr.io/enricomi/publish-unit-test-result-action:v1.6
+        uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
           files: test-output/**/*.xml
