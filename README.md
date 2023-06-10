@@ -14,7 +14,7 @@ So please, watch the [relevant pull request](https://github.com/nhkrecord/nhk-re
 
 If you are running an existing instance of nhk-record that has stopped working, please update the "streamURL" variable located in your `config.json` to the URL as follows:
 
-`"streamUrl": "https://nhkwlive-xjp.akamaized.net/hls/live/2003458/nhkwlive-xjp-en/index_1M.m3u8",`
+`"streamUrl": "https://nhkwlive-xjp.akamaized.net/hls/live/2003458/nhkwlive-xjp-en/index_2M.m3u8",`
 
 ## Dependencies
 
@@ -107,7 +107,7 @@ The location of the config file can be specified with the `-c` option.
   "safetyBuffer": 40000,
   "saveDir": "/recordings/",
   "scheduleUrl": "https://nwapi.nhk.jp",
-  "streamUrl": "https://nhkwlive-xjp.akamaized.net/hls/live/2003458/nhkwlive-xjp-en/index_1M.m3u8",
+  "streamUrl": "https://nhkwlive-xjp.akamaized.net/hls/live/2003458/nhkwlive-xjp-en/index_2M.m3u8",
   "threadLimit": 0,
   "timeOffset": 0,
   "trim": true
